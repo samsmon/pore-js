@@ -205,14 +205,14 @@ export function Landing({
         </section>
 
         <footer className="landing__footer">
-          <a href="https://github.com/srytmj/pore-js" target="_blank" rel="noreferrer">
+          <a href="https://github.com/samsmon/pore-js" target="_blank" rel="noreferrer">
             GitHub
           </a>
           <span aria-hidden>·</span>
           <span>
             Project B of two — the reader engine; Project A is the{' '}
             <a
-              href="https://github.com/srytmj/whitearchive"
+              href="https://github.com/samsmon/yado"
               target="_blank"
               rel="noreferrer"
             >
