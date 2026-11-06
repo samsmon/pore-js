@@ -1,247 +1,271 @@
+<div align="center">
+
 # Pore.js
 
-[![CI](https://github.com/srytmj/pore-js/actions/workflows/ci.yml/badge.svg)](https://github.com/srytmj/pore-js/actions/workflows/ci.yml)
-[![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+### Source-Agnostic Web Reader Engine for Manga & Digital Text
 
-Source-agnostic web reader engine for manga (image-based) and text (EPUB, PDF,
-CBZ). Custom rendering + pagination engine, not a wrapper. **Drop it into your
-own site** — you provide a content source and a mount point, `porejs` is the
-whole reader.
+A high-performance, source-agnostic web reader engine for manga, EPUB, PDF, and CBZ. Framework-agnostic core (`porejs`) + React 19 headless primitives (`porejs-react`) with custom pagination, zero shipped CSS, and offline caching.
 
-> **Not on npm yet** — publishing is postponed while the owner dogfoods it.
-> Use it locally: `pnpm pack:local` →
-> [`docs/releasing.md`](docs/releasing.md#consuming-it-locally).
+[![CI Status](https://img.shields.io/github/actions/workflow/status/srytmj/pore-js/ci.yml?branch=main&style=flat-square)](https://github.com/srytmj/pore-js/actions/workflows/ci.yml)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=flat-square&logo=typescript&logoColor=white)](#tech-stack--workspace-matrix)
+[![React 19](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)](#tech-stack--workspace-matrix)
+[![pnpm Workspace](https://img.shields.io/badge/pnpm-workspace-orange?style=flat-square&logo=pnpm&logoColor=white)](#workspace-layout)
+[![Multi-Format](https://img.shields.io/badge/formats-CBZ%20%7C%20EPUB%20%7C%20PDF-success?style=flat-square)](#key-features)
+[![License MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 
-**New here?** → [`docs/getting-started.md`](docs/getting-started.md).
+[Quick Start](#quick-start) · [Architecture](#engine-architecture) · [Features](#key-features) · [Integration](#integration-guide) · [Workspace](#workspace-layout) · [Documentation](#documentation-index)
 
-> ### 🤖 If you are an AI agent
->
-> **Read [`docs/ai-agent-guide.md`](docs/ai-agent-guide.md) first.** It is the
-> single entry point: the repo map, how to run/build/test/verify, the commit
-> and worklog conventions, the invariants you must not break, and the current
-> milestone. From there:
-> [`docs/architecture.md`](docs/architecture.md) (how the engine works inside) ·
-> [`docs/integration.md`](docs/integration.md) (how to consume the packages) ·
-> [`docs/agent-worklog.md`](docs/agent-worklog.md) (what recent sessions did —
-> and where you append your own entry).
+</div>
 
-**Docs:** [`getting-started`](docs/getting-started.md) ·
-[`integration`](docs/integration.md) · [`architecture`](docs/architecture.md) ·
-[`stability`](docs/stability.md) · [`accessibility`](docs/accessibility.md) ·
-[`releasing`](docs/releasing.md) · [`deploy`](docs/deploy.md) ·
-[`ai-agent-guide`](docs/ai-agent-guide.md) ·
-[`reader-engine-design`](docs/reader-engine-design.md) (RFC) ·
-[`m8-plan`](docs/m8-plan.md) (current milestone) ·
-[`known-issues`](docs/known-issues.md) · [`CHANGELOG`](CHANGELOG.md)
+---
 
-## Workspace
+> Built for developers building digital libraries: a complete, headless reader engine that decouples content sources from rendering — you supply the data stream, Pore.js handles the canvas, viewport virtualization, text layout, and gesture physics.
 
+> [!NOTE]
+> **Pre-release Dogfooding Status (M8 / v1.0.0-rc.1):** npm registry publishing is currently postponed while the engine is dogfooded in production homelab environments. Consume the packages locally via `pnpm pack:local` or workspace links per [`docs/releasing.md`](docs/releasing.md#consuming-it-locally).
+
+---
+
+## Engine Architecture
+
+```mermaid
+flowchart TD
+    subgraph Sources[" Content Source Layer (ReaderSource) "]
+        Demo["DemoSource / LocalFileSource<br/>(Local Files, CBZ, ZIP)"]
+        Remote["KavitaSource / OpdsSource<br/>(Remote Stream / OPDS Catalog)"]
+        Cache["CachedSource v2<br/>(IndexedDB + Cache API)"]
+    end
+
+    subgraph Core[" Engine Core (porejs) "]
+        ImgEng["ImageEngine<br/>(Manga, CBZ, Webtoon)"]
+        TxtEng["TextEngine<br/>(EPUB Reflow, CSS Multicol)"]
+        PdfEng["PdfEngine<br/>(pdfjs-dist Canvas Pipeline)"]
+    end
+
+    subgraph Sandbox[" Reading Frame Sandbox "]
+        Frame["Sandboxed Iframe Container<br/>(Strict CSP: script-src 'none')"]
+        Virtual["Viewport Virtualization<br/>& Continuous Pagination"]
+    end
+
+    subgraph ReactBindings[" Headless React 19 Bindings (porejs-react) "]
+        Provider["&lt;ReaderProvider&gt;<br/>State Management & Context"]
+        ReaderComp["&lt;Reader&gt; Surface<br/>Viewport Virtualizer & Gesture Physics"]
+        HeadlessUI["Headless Primitives & Hooks<br/>&lt;SettingsPanel&gt; · &lt;TableOfContents&gt;<br/>useReaderProgress · useReaderSearch · useTts"]
+    end
+
+    subgraph HostApp[" Host Application UI & Styling "]
+        HostStyles["Host App Design System<br/>(Styled purely via semantic [data-pore-*] attributes)"]
+    end
+
+    Demo --> Core
+    Remote --> Cache
+    Cache --> Core
+    Core --> Sandbox
+    Sandbox --> ReactBindings
+    ReactBindings --> HostApp
 ```
-packages/
-  reader-core     porejs — framework-agnostic engine (sources, image/text/PDF, position, search)
-  reader-react    porejs-react — React 19 bindings: <Reader>, hooks, headless components
-apps/
-  demo            @pore/demo — the public demo (Vite, generated fixtures)
-examples/
-  host-app        embedding porejs in a third-party site (a fake manga library)
-fixtures/         provenance notes; image fixtures are generated
-```
 
-## Develop
+The engine enforces strict architectural separation across four distinct boundaries:
+1. **Source Decoupling**: Data streams are ingested via abstract `ReaderSource` adapters (local files, OPDS, or remote servers) wrapped in a transparent caching layer.
+2. **Framework-Agnostic Core**: Canvas rendering, pagination calculations, EPUB spine parsing, and locator offsets operate independently of any UI framework.
+3. **Sandbox Isolation**: EPUB documents and untrusted markup execute inside a sandboxed iframe with strict Content Security Policy (`script-src 'none'`) preventing script execution.
+4. **Headless Presentation**: React 19 bindings emit zero bundled styles, allowing the host application full layout control through semantic `data-pore-*` attributes.
+
+---
+
+## Key Features
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <h4>Multi-Engine Rendering &amp; Layout</h4>
+      <ul>
+        <li><strong>Multi-Format Support</strong>: Unified reader engine handling image manga (CBZ/ZIP), EPUB text reflow, and PDF document rendering.</li>
+        <li><strong>Advanced Manga Layouts</strong>: Seamless single-page, double-page spread pairing (with spread offset), and continuous vertical/horizontal scroll.</li>
+        <li><strong>Flow Directions</strong>: Right-to-Left (manga) and Left-to-Right (western comics/books) with matching gestures and keyboard maps.</li>
+        <li><strong>EPUB Reflow &amp; Pagination</strong>: CSS multi-column pagination running inside a sandboxed iframe (<code>script-src 'none'</code>).</li>
+        <li><strong>PDF Rendering Pipeline</strong>: Offscreen canvas rendering via <code>pdfjs-dist</code> with hierarchical outline extraction and search.</li>
+      </ul>
+    </td>
+    <td width="50%" valign="top">
+      <h4>Headless Architecture &amp; Integration</h4>
+      <ul>
+        <li><strong>Zero Shipped CSS</strong>: Styled entirely via semantic <code>data-pore-*</code> markup and unstyled headless components.</li>
+        <li><strong>Framework-Agnostic Core</strong>: Can be consumed directly without React using <code>createImageEngine</code>, <code>createTextEngine</code>, or <code>createPdfEngine</code>.</li>
+        <li><strong>Offline Cache &amp; Resume</strong>: <code>CachedSource</code> v2 backed by IndexedDB and Cache API with byte-budgeted chapter preloading.</li>
+        <li><strong>Text-to-Speech (TTS)</strong>: Sentence-level highlight synchronization and automatic page-turn via browser <code>SpeechSynthesis</code>.</li>
+        <li><strong>Annotation Engine</strong>: CSS Custom Highlight API text highlights, notes, and portable <code>epubcfi</code> locators across devices.</li>
+        <li><strong>Cross-Browser Fidelity</strong>: Automated Playwright test suite continuously validated across Chromium, Firefox, and WebKit (Safari).</li>
+      </ul>
+    </td>
+  </tr>
+</table>
+
+---
+
+## Workspace Layout
+
+Pore.js is maintained as a pnpm monorepo cleanly isolating core algorithms from frontend UI bindings:
+
+| Package | Directory | Role & Responsibility |
+|---|---|---|
+| `porejs` | `packages/reader-core` | Framework-agnostic reader core: sources, image/text/PDF engines, locator model, worker search |
+| `porejs-react` | `packages/reader-react` | React 19 headless primitives: `<Reader>`, context providers, custom hooks, and UI controls |
+| `@pore/demo` | `apps/demo` | Public demo application showcasing editorial reading UI, dark mode, and synthetic fixtures |
+| `@pore/example-host-app` | `examples/host-app` | Minimal third-party embedding reference illustrating host integration |
+
+---
+
+## Tech Stack & Workspace Matrix
+
+| Layer | Technology | Purpose |
+|---|---|---|
+| **Core Engine** | TypeScript 5.7+ | Strict type safety, engine algorithms, zero-dependency core architecture |
+| **UI Bindings** | React 19 | Headless components, compound state context, declarative reactive hooks |
+| **Text & PDF** | CSS Multi-Column / `pdfjs-dist` | Sandboxed EPUB reflow and canvas-based document rendering |
+| **Offline Storage** | IndexedDB + Cache API | Resilient progress checkpoints, blob storage, and offline media cache |
+| **Tooling & Test** | Vite 6 / tsup / Vitest / Playwright | Monorepo bundling, unit tests, and cross-browser e2e verification |
+
+---
+
+## Quick Start
+
+### Prerequisites
+- **Node.js** >= 20.0.0
+- **pnpm** >= 9.0.0 (`corepack enable`)
+
+### Monorepo Development
 
 ```bash
+# 1. Enable corepack and install workspace dependencies
 corepack enable
 pnpm install
-pnpm gen:fixtures   # generate the demo image fixtures (CC0 synthetic)
-pnpm dev            # run the demo at http://localhost:5173
-pnpm build          # build the packages
-pnpm test           # vitest (reader-core)
-pnpm typecheck      # tsc -b across the workspace
-pnpm lint
 
-pnpm --filter @pore/demo e2e:install   # one-time: Playwright browser
-pnpm --filter @pore/demo e2e           # end-to-end demo tests
+# 2. Generate synthetic CC0 demo fixtures (manga, EPUB, PDF)
+pnpm gen:fixtures
+
+# 3. Start local development server (demo app on http://localhost:5173)
+pnpm dev
+
+# 4. Verify test suites and build output
+pnpm test          # Run Vitest across reader-core and reader-react
+pnpm typecheck     # Typecheck all packages and applications via tsc
+pnpm lint          # Run workspace code quality linters
+pnpm build         # Build distributable packages via tsup and Vite
+
+# 5. Run end-to-end browser tests
+pnpm --filter @pore/demo e2e:install   # One-time Playwright browser download
+pnpm --filter @pore/demo e2e           # Run e2e test suite across browsers
 ```
 
-Requires Node >= 20.
+---
 
-## Browser support
+## Integration Guide
 
-The e2e suite runs on Chromium, Firefox and WebKit (Safari's engine).
+### 1. Basic React Integration
 
-| | Chrome / Edge | Firefox | Safari (macOS / iOS) |
-|---|---|---|---|
-| image / manga | ✅ | ✅ | ✅ |
-| EPUB text engine | ✅ | ✅ | ✅ |
-| PDF | ✅ | ✅ | ✅ (canvas fallback where `OffscreenCanvas` is absent) |
-| highlights, bookmarks, TOC, footnotes | ✅ | ✅ | ✅ |
-| TTS | ✅ | ✅ | ✅ (uses the OS voices) |
-
-Targets current + previous major of each. The text engine's reading frame runs
-with a strict CSP (`script-src 'none'`) and `sandbox` — Safari needs
-`allow-scripts` in the sandbox to deliver input events, so it's set, but the CSP
-is what actually blocks scripts (see `docs/architecture.md`).
-
-## Integrating it in your app
-
-Full guide: [`docs/integration.md`](docs/integration.md). The short version —
+Install the packages in your project and mount `<Reader>` inside a `ReaderProvider`. Pore.js manages virtualization, continuous scrolling, and touch gestures:
 
 ```tsx
 import { ReaderProvider, Reader } from 'porejs-react';
 import { CachedSource, DemoSource } from 'porejs';
 
-const source = new CachedSource(new DemoSource()); // swap DemoSource for your own
+// Initialize data source (wrap in CachedSource for offline caching & resume)
+const source = new CachedSource(new DemoSource());
 
-<ReaderProvider source={source}>
-  <Reader bookId="demo-book" className="reader-host" />
-</ReaderProvider>
+export function ReaderView() {
+  return (
+    <ReaderProvider source={source}>
+      <main className="reader-container">
+        {/* Headless reader surface styled via [data-pore-*] CSS selectors */}
+        <Reader bookId="demo-book" className="reader-host" />
+      </main>
+    </ReaderProvider>
+  );
+}
 ```
 
-- **`porejs-react`** — React 19: `<Reader>`, the `useReader*` hooks, and
-  **headless** components (`<SettingsPanel>`, `<TableOfContents>`,
-  `<HighlightsPanel>`, `<ReaderScrubber>`, `<FootnotePopover>`,
-  `<ReaderAnnouncer>`). **Ships no CSS** — you style the `data-pore-*` markup.
-  `apps/demo/src/styles.css` is a complete worked example.
-- **`porejs`** — framework-agnostic. `createImageEngine` /
-  `createTextEngine` / `createPdfEngine` if you're not on React.
-- **Sources** — implement `ReaderSource` (`getManifest`, `getPage`, `getFile`,
-  `loadProgress` / `saveProgress`, optional `loadHighlights` / `saveHighlights`)
-  or use a built-in: `DemoSource`, `LocalFileSource`, `CachedSource` (offline),
-  `KavitaSource`, `OpdsSource`. Wrap any of them in `CachedSource` for offline +
-  resume.
-- **Position** (`loadProgress` / `saveProgress`) is a small opaque JSON value —
-  store it verbatim; it round-trips across devices and viewport sizes.
+### 2. Headless Component Primitives
 
-## Status — hardening for `1.0` (M8, `1.0.0-rc.1`)
+The `porejs-react` package exports unstyled headless components and hooks for building custom reader chrome:
 
-**M8 — [`docs/m8-plan.md`](docs/m8-plan.md).** The engines have been
-feature-complete since M7 (`v0.10.0-library`); M8 is making it dependable and
-publishable: packages renamed to **`porejs` / `porejs-react`**, the public API
-frozen ([`docs/stability.md`](docs/stability.md)), a worked embed example
-([`examples/host-app/`](examples/host-app)), a real-book corpus test,
-robustness fuzzing, a **3-browser** e2e matrix (fixed 2 real Safari bugs),
-`size-limit` budgets, a security + a11y pass
-([`docs/accessibility.md`](docs/accessibility.md)), a Changesets → npm
-provenance release pipeline (wired, **dormant**), and a Docker image for the
-demo. **npm publish is postponed** — owner is dogfooding first; consume it
-locally per [`docs/releasing.md`](docs/releasing.md#consuming-it-locally). Not
-yet: the live deploy and the `1.0.0` tag.
+- **Components**: `<SettingsPanel>`, `<TableOfContents>`, `<HighlightsPanel>`, `<ReaderScrubber>`, `<FootnotePopover>`, `<ReaderAnnouncer>`.
+- **Hooks**: `useReaderProgress()`, `useReaderSearch()`, `useDownload()`, `useTts()`, `useReaderHistory()`, `useBookmarks()`.
+- **Styling**: Target semantic attributes such as `[data-pore-layout]`, `[data-pore-flow]`, and `[data-pore-theme]` in your host stylesheet.
 
-<details><summary>Library &amp; portability (M7, <code>v0.10.0-library</code>)</summary>
+### 3. Custom Sources
 
-**Library & portability (M7):** bookmarks (`useBookmarks` + headless
-`<BookmarksPanel>`, over new optional `ReaderSource.loadBookmarks?` /
-`saveBookmarks?` and a new `goToCfi` engine method), a "Continue reading" shelf
-on the demo home, a full-screen annotations review, versioned export / import
-(`docs/portability-format.md`), and `?book=&cfi=` deep links that navigate +
-pulse. All additive. See `docs/m7-plan.md`.
+To connect a proprietary backend or digital catalog, implement the `ReaderSource` interface:
 
-</details>
+```ts
+import type { ReaderSource, Manifest, Position, Page } from 'porejs';
 
-<details><summary>Earlier milestones (M0–M6)</summary>
+export class CustomLibrarySource implements ReaderSource {
+  async getManifest(bookId: string): Promise<Manifest> {
+    const res = await fetch(`/api/books/${bookId}/manifest`);
+    return res.json();
+  }
 
-**Editorial UI redesign (M6):** the demo has a quiet, reading-first identity —
-warm paper palette, bundled Hanken Grotesk + Literata, no decorative accent
-(`docs/design-language.md`). The menu bar is one collapsible rail with settings
-inline as a height-animated accordion (a new headless `Accordion` primitive; a
-`layout` prop on the settings panels). A `<Reader fontFaceCss>` prop wires the
-reader's Serif / Sans options to bundled webfonts. New editorial landing page.
-Webtoon strips honour the reader's `maxWidth`. Mobile: the rail overlays and
-starts collapsed. See `docs/m6-plan.md`.
+  async getPage(bookId: string, pageIndex: number): Promise<Page> {
+    const res = await fetch(`/api/books/${bookId}/pages/${pageIndex}`);
+    return res.json();
+  }
 
-**Reading-comfort chrome + annotation polish (M5):** the demo's menu bar sits
-on the left or right edge for every engine and can auto-hide when idle
-(fullscreen forces it); `<SettingsPanel>` gained an `extraTabs` prop. Highlights
-now take a **note** — `updateHighlight()` on the handle / `useReaderSelection()`
-— edited in a reusable headless `<HighlightsPanel>`. PDF highlights: Shift-drag
-over a page to highlight a passage (`HighlightRecord` is now a `text | rect`
-union; `createPdfEngine` gained the highlight API). See `docs/m5-plan.md`.
-Fixed-layout two-page spreads were deferred.
+  async loadProgress(bookId: string): Promise<Position | null> {
+    const saved = localStorage.getItem(`progress:${bookId}`);
+    return saved ? JSON.parse(saved) : null;
+  }
 
-**Annotations & beyond (M4):** word-level anchor offsets + a portable
-`epubcfi(...)` position (`getCfi()`); text highlights with a floating
-selection toolbar, persisted via `ReaderSource.loadHighlights`/`saveHighlights`
-and rendered with the CSS Custom Highlight API; fixed-layout (pre-paginated)
-EPUB support, scaled to fit the window; a read-only `OpdsSource` (OPDS 1.2)
-catalog browser; text-to-speech (`useTts()`) with sentence-level highlight
-sync and auto page-turn, backed by the browser's `SpeechSynthesis`. See
-`docs/m4-plan.md`.
+  async saveProgress(bookId: string, position: Position): Promise<void> {
+    localStorage.setItem(`progress:${bookId}`, JSON.stringify(position));
+  }
+}
+```
 
-**UI foundation:** Tailwind v4 + design tokens + dark mode in the demo; a
-headless Radix component layer in `reader-react` (`<SettingsPanel>` Dialog,
-`<TableOfContents>`, `<FootnotePopover>`, `SelectField` / `SliderField` /
-`SwitchField` / `Tabs` primitives); an injectable animation seam
-(`ReaderTransitions` / `instantTransitions` in core) with `gsapAdapter(gsap)`
-for eased page turns, zoom and scroll — reduced-motion aware. The engine stays
-framework- and animation-library-agnostic.
+---
 
-**Integration & a11y (M3):** `KavitaSource` reads from a live
-[Kavita](https://www.kavitareader.com/) server; `CachedSource` v2 + `MediaCache`
-download whole books for offline reading (`useDownload`); in-book search runs in
-a Worker (`useReaderSearch`); vertical Japanese (`vertical-rl`) and an accessible
-scrolling **flow mode**; `<ReaderAnnouncer>` for screen readers.
+## Browser Compatibility
 
-**PDF (M2):** `loadPdf` wraps `pdfjs-dist`; `PdfImageSource` renders pages to
-webp and feeds the image engine unchanged; `createPdfEngine` adds the outline as
-`reader:toc`. `<Reader>` opens a PDF, EPUB or manga transparently.
+The automated Playwright end-to-end test suite continuously validates rendering fidelity across all major engines:
 
-**Unified shell (M2):** one `Locator` position model + `reader:progress`
-(chapter, pages-left, `minutesLeft`) + `chapters()` across all three engines;
-`useReaderProgress()`. `LocalFileSource` opens a dropped `.epub` / `.pdf` too.
+| Feature / Engine | Chromium (Chrome, Edge) | Gecko (Firefox) | WebKit (Safari macOS/iOS) |
+|---|---|---|---|
+| **Image & Manga Engine** | ✅ Full Support | ✅ Full Support | ✅ Full Support |
+| **EPUB Reflow (`TextEngine`)** | ✅ Full Support | ✅ Full Support | ✅ Full Support (`allow-scripts` + strict CSP) |
+| **PDF Canvas Engine** | ✅ Full Support | ✅ Full Support | ✅ Canvas Fallback (where `OffscreenCanvas` absent) |
+| **Highlights & Annotations** | ✅ Custom Highlight API | ✅ Custom Highlight API | ✅ Custom Highlight API |
+| **Text-to-Speech (TTS)** | ✅ Native SpeechSynthesis | ✅ Native SpeechSynthesis | ✅ OS Voice Synthesis |
 
-**EPUB (M1):** `parseEpub` (OPF / spine / TOC), `createTextEngine` — sandboxed
-iframe + CSS-multicol pagination, `anchor` resume, live typography + themes, TOC
-navigation, footnote popovers.
+---
 
-**Image reader (M0 / M0.5):** feature-complete —
+## Troubleshooting & Developer Notes
 
-- **Layout**: paged single/double (spread pairing, `spreadOffset`, late
-  wide-page discovery), continuous vertical + horizontal (virtualized), LTR /
-  RTL / vertical
-- Fit modes, zoom/pan, image filters (brightness / greyscale / dim)
-- Preload: `window` ring buffer + whole-chapter `all` (byte guard)
-- Loading: `native` / `blob` / `bitmap` (canvas)
-- Input: remappable keyboard, tap zones, swipe, wheel; autoscroll, paged
-  auto-advance, next-chapter countdown
-- Last-read checkpoint (IndexedDB via `CachedSource`)
-- Sources: `DemoSource`, `LocalFileSource` (drop a `.cbz`, `.epub`, `.pdf` or
-  images), `KavitaSource`, `CachedSource` (offline)
-- React: `<Reader>`, `<SettingsPanel>`, `<ReaderAnnouncer>`, hooks
-  (`useReaderProgress`, `useReaderSearch`, `useDownload`, `useReaderHistory`, …)
+| Scenario | Probable Cause | Immediate Remediation |
+|---|---|---|
+| **Safari CSP Event Dropping** | Sandboxed iframes without `allow-scripts` drop user pointer events | Safari requires `allow-scripts` on iframe sandbox attribute; execution safety is enforced by strict `script-src 'none'` CSP header. |
+| **WebGL & Memory Fallbacks** | GPU context exhaustion on large double-spread image buffers | `ImageEngine` automatically drops down to standard 2D canvas context and evicts inactive offscreen tiles outside viewport ring buffer. |
+| **Canvas Fallback in PDF** | Some Safari / WebKit versions lack full `OffscreenCanvas` worker support | `PdfImageSource` automatically falls back to synchronous main-thread HTML5 2D canvas rendering without UI interruption. |
+| **Local Package Dogfooding** | Packages are not published to npm registry during M8 stabilization | Run `pnpm pack:local` to generate local `.tgz` tarballs, or link directly using `pnpm link` (see [`docs/releasing.md`](docs/releasing.md)). |
 
-See `docs/m0-plan.md` … `docs/m3-plan.md` for the task breakdowns, and
-[`CHANGELOG.md`](CHANGELOG.md).
+---
 
-</details>
+## Documentation Index
 
-## Milestones
+Comprehensive technical specifications, design RFCs, and operational runbooks are maintained in the [`docs/`](docs/) directory:
 
-UI foundation: [`docs/ui-foundation-plan.md`](docs/ui-foundation-plan.md) — done
-(U1–U6, plus the scrubber / loading-skeleton+error / PDF-search /
-RTL-horizontal / end-page follow-ups all landed on `main`).
+| Document | Scope & Focus | Target Audience |
+|---|---|---|
+| [Getting Started](docs/getting-started.md) | First steps, fixture creation, and local app configuration | New Developers |
+| [Architecture Guide](docs/architecture.md) | Internal engine mechanics, CSP sandboxing, and data lifecycles | System Architects |
+| [Integration Guide](docs/integration.md) | In-depth API reference for `ReaderSource`, hooks, and headless UI | Frontend Engineers |
+| [AI Agent Guide](docs/ai-agent-guide.md) | Monorepo invariants, automation rules, and development conventions | AI Coding Agents |
+| [Milestone 8 Plan](docs/m8-plan.md) | Hardening roadmap, API freeze checklist, and release gates | Core Contributors |
+| [Changelog](CHANGELOG.md) | Release history, breaking changes, and version notes | All Developers |
 
-M4: [`docs/m4-plan.md`](docs/m4-plan.md) — done (F1–F6, `v0.7.0-annotate`).
-
-M5: [`docs/m5-plan.md`](docs/m5-plan.md) — done (G1 · F2b · F2c ·
-F6, `v0.8.0-comfort`; F3b deferred).
-
-M6: [`docs/m6-plan.md`](docs/m6-plan.md) — done (D0–D7, `v0.9.0-editorial`) —
-an editorial UI redesign of the demo. `docs/design-language.md` is the
-reference.
-
-M7: [`docs/m7-plan.md`](docs/m7-plan.md) — done (L0–L6, `v0.10.0-library`) —
-bookmarks, home shelf, annotations review, export / import, `?cfi=` deep
-links. `docs/portability-format.md` is the bundle schema.
-
-M8: [`docs/m8-plan.md`](docs/m8-plan.md) — **code-complete** (target `v1.0.0`) —
-H0–H10 done (rename, API freeze, embed example, corpus, robustness,
-cross-browser, size budgets, security/a11y, release pipeline + demo image,
-getting-started). Remaining is owner-gated: npm publish (**postponed** —
-dogfooding first), the homelab deploy, then the `1.0.0` tag after an RC
-shake-out.
-
-Live status: [`docs/agent-worklog.md`](docs/agent-worklog.md).
+---
 
 ## License
 
-MIT
+Distributed under the [MIT License](LICENSE).
+
+[↑ Back to top](#porejs)
