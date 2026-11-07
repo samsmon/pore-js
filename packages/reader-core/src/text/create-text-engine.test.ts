@@ -561,4 +561,52 @@ describe('createTextEngine — text-to-speech', () => {
     expect(synth.cancel).toHaveBeenCalled();
     engine.destroy();
   });
+
+  it('sanitizes footnote HTML before emitting reader:footnote (SEC-01)', async () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    try {
+      const engine = createTextEngine({ container, source: source(), bookId: 'b' });
+      const footnotes: { html: string; href: string }[] = [];
+      engine.on('reader:footnote', (payload) => footnotes.push(payload));
+
+      await engine.mount();
+
+      const iframe = container.querySelector('iframe') as HTMLIFrameElement;
+      const cdoc = iframe.contentDocument;
+      expect(cdoc).toBeTruthy();
+
+      if (cdoc) {
+        cdoc.body.innerHTML =
+          '<p>Reference <a id="link1" href="#fn1" epub:type="noteref">1</a></p>' +
+          '<aside id="fn1" epub:type="footnote">' +
+          '<p>Safe paragraph</p>' +
+          '<script>alert("xss")</script>' +
+          '<iframe src="https://evil.com"></iframe>' +
+          '<object data="evil.swf"></object>' +
+          '<embed src="evil.swf">' +
+          '<button onclick="alert(1)">Click me</button>' +
+          '<a href="javascript:alert(2)">Dangerous link</a>' +
+          '</aside>';
+
+        const link = cdoc.getElementById('link1');
+        expect(link).not.toBeNull();
+        link?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      }
+
+      expect(footnotes).toHaveLength(1);
+      const html = footnotes[0]!.html;
+      expect(html).toContain('Safe paragraph');
+      expect(html).not.toContain('<script');
+      expect(html).not.toContain('<iframe');
+      expect(html).not.toContain('<object');
+      expect(html).not.toContain('<embed');
+      expect(html).not.toContain('onclick');
+      expect(html).not.toContain('javascript:');
+
+      engine.destroy();
+    } finally {
+      container.remove();
+    }
+  });
 });

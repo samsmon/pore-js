@@ -45,6 +45,10 @@ export interface ReaderProgress {
   pagesLeftInChapter: number;
   /** Estimate from a rolling seconds-per-page average; 0 when at the end. */
   minutesLeft: number;
+  /** 0-based book-level page (mirrors `locator.page`). */
+  page?: number;
+  /** Total book-level pages (mirrors `locator.total`). */
+  pageCount?: number;
 }
 
 /**

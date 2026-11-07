@@ -33,6 +33,8 @@ describe('PageLoader', () => {
     expect(src.getPage).toHaveBeenCalledTimes(1);
     expect(loader.bytesOf(2)).toBe(4);
     expect(loader.isLoaded(2)).toBe(true);
+    expect(loader.getUrl(2)).toBe(u1);
+    expect(loader.getUrl(99)).toBeUndefined();
   });
 
   it('evicts and revokes object URLs outside the retain set + LRU', async () => {

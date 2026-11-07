@@ -121,57 +121,75 @@ export async function loadPdf(data: Uint8Array): Promise<PdfDoc> {
     outline,
 
     async pageSize(n) {
-      const v = (await doc.getPage(n)).getViewport({ scale: 1 });
-      return { width: v.width, height: v.height };
+      const page = await doc.getPage(n);
+      try {
+        const v = page.getViewport({ scale: 1 });
+        return { width: v.width, height: v.height };
+      } finally {
+        page.cleanup();
+      }
     },
 
     async renderToBlob(n, o = {}) {
       const page = await doc.getPage(n);
-      const base = page.getViewport({ scale: 1 });
-      let scale = o.scale ?? (globalThis.devicePixelRatio || 1.5);
-      if (o.maxDim) scale = Math.min(scale, o.maxDim / Math.max(base.width, base.height));
-      const viewport = page.getViewport({ scale });
-      const w = Math.ceil(viewport.width);
-      const h = Math.ceil(viewport.height);
-      const { canvas, ctx, toBlob } = await renderTarget(w, h);
-      await page.render({
-        canvasContext: ctx as unknown as never,
-        viewport,
-        canvas: canvas as unknown as never,
-      }).promise;
-      return toBlob();
+      try {
+        const base = page.getViewport({ scale: 1 });
+        let scale = o.scale ?? (globalThis.devicePixelRatio || 1.5);
+        if (o.maxDim) scale = Math.min(scale, o.maxDim / Math.max(base.width, base.height));
+        const viewport = page.getViewport({ scale });
+        const w = Math.ceil(viewport.width);
+        const h = Math.ceil(viewport.height);
+        const { canvas, ctx, toBlob } = await renderTarget(w, h);
+        await page.render({
+          canvasContext: ctx as unknown as never,
+          viewport,
+          canvas: canvas as unknown as never,
+        }).promise;
+        return await toBlob();
+      } finally {
+        page.cleanup();
+      }
     },
 
     async textContent(n) {
-      const tc = await (await doc.getPage(n)).getTextContent();
-      return tc.items
-        .map((it) => ('str' in it ? it.str : ''))
-        .join(' ')
-        .replace(/\s+/g, ' ')
-        .trim();
+      const page = await doc.getPage(n);
+      try {
+        const tc = await page.getTextContent();
+        return tc.items
+          .map((it) => ('str' in it ? it.str : ''))
+          .join(' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+      } finally {
+        page.cleanup();
+      }
     },
 
     async textRects(n) {
       const page = await doc.getPage(n);
-      const vp = page.getViewport({ scale: 1 });
-      const tc = await page.getTextContent();
-      const out: { str: string; x: number; y: number; w: number; h: number }[] = [];
-      for (const it of tc.items) {
-        if (!('str' in it) || it.str === '') continue;
-        // item transform → device space (y-down, origin top-left)
-        const m = Util.transform(vp.transform, it.transform);
-        const fontH = Math.hypot(m[2], m[3]) || it.height || 1;
-        const x = m[4];
-        const y = m[5] - fontH;
-        out.push({
-          str: it.str,
-          x: x / vp.width,
-          y: y / vp.height,
-          w: it.width / vp.width,
-          h: fontH / vp.height,
-        });
+      try {
+        const vp = page.getViewport({ scale: 1 });
+        const tc = await page.getTextContent();
+        const out: { str: string; x: number; y: number; w: number; h: number }[] = [];
+        for (const it of tc.items) {
+          if (!('str' in it) || it.str === '') continue;
+          // item transform → device space (y-down, origin top-left)
+          const m = Util.transform(vp.transform, it.transform);
+          const fontH = Math.hypot(m[2], m[3]) || it.height || 1;
+          const x = m[4];
+          const y = m[5] - fontH;
+          out.push({
+            str: it.str,
+            x: x / vp.width,
+            y: y / vp.height,
+            w: it.width / vp.width,
+            h: fontH / vp.height,
+          });
+        }
+        return out;
+      } finally {
+        page.cleanup();
       }
-      return out;
     },
 
     async destroy() {

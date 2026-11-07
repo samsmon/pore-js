@@ -211,6 +211,8 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
       chapterCount: chs.length,
       pagesLeftInChapter: cp.pagesLeftInChapter,
       minutesLeft: pace.minutesLeft(Math.max(0, total - 1 - page)),
+      page: loc.page,
+      pageCount: total,
     });
     scheduleSave();
   };
@@ -253,7 +255,7 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
     viewport.style.filter = filters.join(' ');
   };
 
-  const applyFitStyle = (img: HTMLImageElement) => {
+  const applyFitStyle = (img: HTMLImageElement | HTMLCanvasElement) => {
     const map: Record<ImageEngineSettings['fit'], string> = {
       width: 'width:100%;height:auto;',
       height: 'height:100%;width:auto;',
@@ -261,7 +263,10 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
       original: 'width:auto;height:auto;max-width:none;',
       smart: 'max-width:100%;max-height:100%;width:auto;height:auto;',
     };
-    img.style.cssText = `display:block;${map[settings.fit]}`;
+    const transition = prefersReducedMotion()
+      ? ''
+      : 'transition:width 0.25s cubic-bezier(0.16, 1, 0.3, 1),max-width 0.25s cubic-bezier(0.16, 1, 0.3, 1),height 0.25s cubic-bezier(0.16, 1, 0.3, 1),max-height 0.25s cubic-bezier(0.16, 1, 0.3, 1);';
+    img.style.cssText = `display:block;${map[settings.fit]}${transition}`;
     if (settings.maxWidth) img.style.maxWidth = `${settings.maxWidth}px`;
     if (settings.maxHeight) img.style.maxHeight = `${settings.maxHeight}px`;
   };
@@ -271,8 +276,14 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
     'border:1px dashed currentColor;opacity:0.6;font:inherit;text-align:center;cursor:pointer;padding:1rem;box-sizing:border-box;';
 
   const loadInto = (img: HTMLImageElement, pageIndex: number) => {
-    emitter.emit('reader:loadingstate', { index: pageIndex, state: 'loading' });
     img.removeAttribute('data-pore-page-error');
+    const syncUrl = loader?.getUrl(pageIndex);
+    if (syncUrl) {
+      img.src = syncUrl;
+      emitter.emit('reader:loadingstate', { index: pageIndex, state: 'loaded' });
+      return;
+    }
+    emitter.emit('reader:loadingstate', { index: pageIndex, state: 'loading' });
     loader
       ?.get(pageIndex)
       .then((url) => {
@@ -334,6 +345,8 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
 
   // ---- paged rendering ----------------------------------------------------------
 
+  let renderedSpread = -1;
+
   const bitmapMode = () =>
     settings.loadingMethod === 'bitmap' && settings.preloadStrategy !== 'all';
 
@@ -342,31 +355,52 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
     if (!spread) return;
     viewport.style.cssText =
       'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:var(--pore-page-gap,0px);';
-    viewport.replaceChildren();
+
+    if (renderedSpread === currentSpread && viewport.children.length === spread.pages.length) {
+      for (const el of Array.from(viewport.children)) {
+        if (el instanceof HTMLImageElement || el instanceof HTMLCanvasElement) {
+          applyFitStyle(el);
+        }
+      }
+      return;
+    }
+
+    renderedSpread = currentSpread;
+    const newChildren: HTMLElement[] = [];
     for (const pageIndex of spread.pages) {
       if (bitmapMode()) {
         const canvas = doc.createElement('canvas');
         canvas.setAttribute('role', 'img');
         canvas.setAttribute('aria-label', `page ${pageIndex + 1}`);
-        applyFitStyle(canvas as unknown as HTMLImageElement);
-        viewport.appendChild(canvas);
-        void loader?.getBitmap(pageIndex).then((bmp) => {
-          if (destroyed || !bmp) return;
-          canvas.width = bmp.width;
-          canvas.height = bmp.height;
-          canvas.getContext('2d')?.drawImage(bmp, 0, 0);
-          maybeDiscoverWideDims(pageIndex, bmp.width, bmp.height);
-        });
+        applyFitStyle(canvas);
+        const syncBmp = loader?.getBitmapSync(pageIndex);
+        if (syncBmp) {
+          canvas.width = syncBmp.width;
+          canvas.height = syncBmp.height;
+          canvas.getContext('2d')?.drawImage(syncBmp, 0, 0);
+          maybeDiscoverWideDims(pageIndex, syncBmp.width, syncBmp.height);
+        } else {
+          void loader?.getBitmap(pageIndex).then((bmp) => {
+            if (destroyed || !bmp) return;
+            canvas.width = bmp.width;
+            canvas.height = bmp.height;
+            canvas.getContext('2d')?.drawImage(bmp, 0, 0);
+            maybeDiscoverWideDims(pageIndex, bmp.width, bmp.height);
+          });
+        }
+        newChildren.push(canvas);
         continue;
       }
       const img = doc.createElement('img');
-      img.decoding = 'async';
+      const syncUrl = loader?.getUrl(pageIndex);
+      img.decoding = syncUrl ? 'sync' : 'async';
       img.alt = altFor(pageIndex);
       applyFitStyle(img);
       img.addEventListener('load', () => maybeDiscoverWide(pageIndex, img), { once: true });
-      viewport.appendChild(img);
       loadInto(img, pageIndex);
+      newChildren.push(img);
     }
+    viewport.replaceChildren(...newChildren);
   };
 
   const maybeDiscoverWide = (pageIndex: number, img: HTMLImageElement) =>
@@ -444,6 +478,10 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
         img.style.width = `${sw}px`;
         img.style.maxWidth = '100%';
         img.style.transform = 'translateX(-50%)';
+        if (!prefersReducedMotion()) {
+          img.style.transition =
+            'width 0.25s cubic-bezier(0.16, 1, 0.3, 1), max-width 0.25s cubic-bezier(0.16, 1, 0.3, 1), height 0.25s cubic-bezier(0.16, 1, 0.3, 1), max-height 0.25s cubic-bezier(0.16, 1, 0.3, 1)';
+        }
       }
       img.style[horiz ? 'left' : 'top'] = `${clayout.offsets[s]}px`;
     }
@@ -499,6 +537,7 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
 
   const rebuildSpreads = (preserveLeadingPage?: number) => {
     if (!manifest) return;
+    renderedSpread = -1;
     const leading = preserveLeadingPage ?? currentPage();
     spreads = buildSpreads(manifest.pages, {
       layout: isContinuous() ? 'paged-single' : settings.layout,
@@ -956,6 +995,7 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
 
   async function mount(): Promise<void> {
     const m = await source.getManifest(bookId);
+    if (destroyed) return;
     if (m.type !== 'image') {
       throw new Error(`createImageEngine: "${bookId}" is a ${m.type} book, not an image book`);
     }
@@ -991,12 +1031,15 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
     let restoredPage = 0;
     try {
       const saved = await source.loadProgress(bookId);
+      if (destroyed) return;
       if (saved) restoredPage = clampPagePosition(saved, m.pageCount);
       emitter.emit('reader:resumed', { position: saved ?? null, page: restoredPage });
     } catch {
+      if (destroyed) return;
       emitter.emit('reader:resumed', { position: null, page: 0 });
     }
 
+    if (destroyed) return;
     container.replaceChildren(root);
     currentSpread = spreadIndexForPage(spreads, restoredPage);
 
@@ -1039,6 +1082,7 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
   function destroy(): void {
     flushSave();
     destroyed = true;
+    renderedSpread = -1;
     transitions.cancel();
     stopAutoscroll(true);
     if (autoPagedTimer) clearInterval(autoPagedTimer);

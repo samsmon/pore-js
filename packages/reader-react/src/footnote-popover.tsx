@@ -1,4 +1,5 @@
 import * as Popover from '@radix-ui/react-popover';
+import { sanitizeFootnoteHtml } from 'porejs/internal';
 import { useFootnote } from './reader.js';
 
 /**
@@ -9,6 +10,7 @@ import { useFootnote } from './reader.js';
  */
 export function FootnotePopover({ className }: { className?: string }) {
   const [footnote, clear] = useFootnote();
+  const safeHtml = footnote ? sanitizeFootnoteHtml(footnote.html) : '';
   return (
     <Popover.Root open={!!footnote} onOpenChange={(o) => !o && clear()}>
       <Popover.Anchor />
@@ -23,7 +25,7 @@ export function FootnotePopover({ className }: { className?: string }) {
           <Popover.Close className="footnote__close" aria-label="Close" data-pore-footnote-close>
             ×
           </Popover.Close>
-          {footnote ? <div dangerouslySetInnerHTML={{ __html: footnote.html }} /> : null}
+          {safeHtml ? <div dangerouslySetInnerHTML={{ __html: safeHtml }} /> : null}
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>

@@ -51,6 +51,7 @@ export interface PdfEngine extends Omit<ImageEngine, 'on'> {
  * the page (single-page mode).
  */
 export function createPdfEngine(options: CreatePdfEngineOptions): PdfEngine {
+  let destroyed = false;
   const pdfSource = new PdfImageSource(options.source, options.pdf);
   const engine = createImageEngine({ ...options, source: pdfSource });
 
@@ -97,11 +98,14 @@ export function createPdfEngine(options: CreatePdfEngineOptions): PdfEngine {
     // the overlay can only be attached once that has happened
     overlay.attach();
     void pdfSource.outline().then((o) => {
+      if (destroyed) return;
       toc = o;
       for (const l of tocListeners) l({ toc });
     });
     void (async () => {
-      highlights = ((await source.loadHighlights?.(bookId)) ?? []).filter(
+      const loaded = (await source.loadHighlights?.(bookId)) ?? [];
+      if (destroyed) return;
+      highlights = loaded.filter(
         (h): h is RectHighlightRecord => h.kind === 'rect',
       );
       overlay.setHighlights(highlights);
@@ -191,8 +195,14 @@ export function createPdfEngine(options: CreatePdfEngineOptions): PdfEngine {
 
   const gotoHit = (hit: SearchHit): void => engine.goto(hit.sectionIndex);
 
+  const mount = async (): Promise<void> => {
+    await engine.mount();
+    if (destroyed) return;
+  };
+
   return {
     ...engine,
+    mount,
     on(event, handler) {
       if (event === 'reader:toc') {
         const l = handler as unknown as (p: { toc: TocEntry[] }) => void;
@@ -228,6 +238,7 @@ export function createPdfEngine(options: CreatePdfEngineOptions): PdfEngine {
     updateHighlight,
     listHighlights: () => highlights,
     destroy() {
+      destroyed = true;
       readyOff();
       locOff();
       zoomOff();

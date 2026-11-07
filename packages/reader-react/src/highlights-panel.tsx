@@ -54,8 +54,8 @@ export function HighlightsPanel({
   return (
     <ol {...(className ? { className } : {})} data-pore-hl-list>
       {highlights.map((h) => (
-        // remount when colour/note change out from under us (e.g. another tab)
-        <li key={`${h.id}:${h.color}:${h.note ?? ''}`} data-pore-hl-item>
+        // keyed by id to preserve focus and avoid DOM remounts while editing
+        <li key={h.id} data-pore-hl-item>
           <button
             type="button"
             data-pore-hl-jump

@@ -26,7 +26,7 @@ export function ReaderAnnouncer({ debounceMs = 700 }: { debounceMs?: number }) {
   useEffect(() => {
     if (!progress) return;
     const pct = Math.round(progress.percent * 100);
-    const key = `${progress.chapterIndex}:${pct}`;
+    const key = `${progress.chapterIndex}:${progress.page}:${pct}`;
     if (key === last.current) return;
     last.current = key;
     const t = setTimeout(() => {
@@ -36,8 +36,15 @@ export function ReaderAnnouncer({ debounceMs = 700 }: { debounceMs?: number }) {
           : progress.chapterLabel
             ? `${progress.chapterLabel}. `
             : '';
+      const totalPages = progress.pageCount ?? progress.locator?.total;
+      const pageInfo =
+        progress.page !== undefined && totalPages
+          ? `Page ${progress.page + 1} of ${totalPages}. `
+          : progress.page !== undefined
+            ? `Page ${progress.page + 1}. `
+            : '';
       const time = progress.minutesLeft > 0 ? ` About ${progress.minutesLeft} minutes left.` : '';
-      setMessage(`${chapter}${pct}% through the book.${time}`);
+      setMessage(`${chapter}${pageInfo}${pct}% through the book.${time}`);
     }, debounceMs);
     return () => clearTimeout(t);
   }, [progress, debounceMs]);

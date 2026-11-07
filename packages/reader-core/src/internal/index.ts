@@ -68,6 +68,7 @@ export {
 export { elementSteps } from '../text/cfi.js';
 export { rewriteResources } from '../text/rewrite.js';
 export { resolvePath, resolveHref, dirOf, stripHash, fragmentOf } from '../text/epub/path.js';
+export { sanitizeFootnoteHtml } from '../text/sanitize.js';
 
 // TTS controller internals (hosts use the engine's tts* methods / useTts)
 export { segmentSentences, createTtsController } from '../text/tts.js';

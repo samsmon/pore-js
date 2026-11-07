@@ -52,6 +52,16 @@ export class PageLoader {
     return this.#entries.get(index)?.state === 'loaded';
   }
 
+  /** Synchronously returns the loaded URL for an index if already available. */
+  getUrl(index: number): string | undefined {
+    return this.#entries.get(index)?.url;
+  }
+
+  /** Synchronously returns the loaded bitmap for an index if already available. */
+  getBitmapSync(index: number): ImageBitmap | undefined {
+    return this.#entries.get(index)?.bitmap;
+  }
+
   /** Decoded bitmap for a page (bitmap loading method only). Triggers a load if needed. */
   async getBitmap(index: number): Promise<ImageBitmap | null> {
     const existing = this.#entries.get(index);

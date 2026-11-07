@@ -18,6 +18,7 @@ import {
 } from './anchor.js';
 import { parseCfi, resolveCfiElement, serializeCfi, type ParsedCfi } from './cfi.js';
 import { highlightRangeFromSelection, rangeForHighlight } from './highlight.js';
+import { sanitizeFootnoteHtml } from './sanitize.js';
 import type { HighlightRange, HighlightRecord } from '../source/types.js';
 import {
   createTtsController,
@@ -267,6 +268,8 @@ export function createTextEngine(options: CreateTextEngineOptions): TextEngine {
       chapterCount: chs.length,
       pagesLeftInChapter: cp.pagesLeftInChapter,
       minutesLeft: pace.minutesLeft(Math.max(0, total - 1 - bookPage)),
+      page: loc.page,
+      pageCount: total,
     });
     scheduleSave();
   };
@@ -1219,7 +1222,10 @@ export function createTextEngine(options: CreateTextEngineOptions): TextEngine {
     }
     const el = frag ? targetDoc.getElementById(frag) : null;
     noteHtml = (el?.innerHTML ?? el?.textContent ?? '').trim();
-    if (noteHtml) emitter.emit('reader:footnote', { html: noteHtml, href });
+    if (noteHtml) {
+      const safeHtml = sanitizeFootnoteHtml(noteHtml);
+      if (safeHtml) emitter.emit('reader:footnote', { html: safeHtml, href });
+    }
   };
 
   /** Jump to an archive-absolute spine path (+ optional `#fragment`), already resolved. */
@@ -1394,11 +1400,15 @@ export function createTextEngine(options: CreateTextEngineOptions): TextEngine {
 
   async function mount(): Promise<void> {
     const manifest = await source.getManifest(bookId);
+    if (destroyed) return;
     if (manifest.type !== 'epub') {
       throw new Error(`createTextEngine: "${bookId}" is a ${manifest.type} book, not an EPUB`);
     }
     const blob = await source.getFile(bookId);
-    book = parseEpub(new Uint8Array(await blob.arrayBuffer()), { domParser: parser });
+    if (destroyed) return;
+    const arrayBuffer = await blob.arrayBuffer();
+    if (destroyed) return;
+    book = parseEpub(new Uint8Array(arrayBuffer), { domParser: parser });
     spinePages = new Array(book.spine.length).fill(undefined);
 
     container.replaceChildren(root);
@@ -1421,7 +1431,9 @@ export function createTextEngine(options: CreateTextEngineOptions): TextEngine {
     let restore: Position | null = null;
     try {
       restore = await source.loadProgress(bookId);
+      if (destroyed) return;
     } catch {
+      if (destroyed) return;
       restore = null;
     }
     emitter.emit('reader:resumed', { position: restore });
@@ -1429,7 +1441,9 @@ export function createTextEngine(options: CreateTextEngineOptions): TextEngine {
 
     try {
       highlights = (await source.loadHighlights?.(bookId)) ?? [];
+      if (destroyed) return;
     } catch {
+      if (destroyed) return;
       highlights = [];
     }
     emitter.emit('reader:highlightschange', { highlights });
@@ -1438,6 +1452,7 @@ export function createTextEngine(options: CreateTextEngineOptions): TextEngine {
       restore?.type === 'anchor' ? Math.min(restore.spine, book.spine.length - 1) : 0;
     if (restore?.type === 'anchor') pendingAnchor = restore;
     await renderSpine(startSpine);
+    if (destroyed) return;
     emitter.emit('reader:chrometoggle', { visible: chromeVisible });
     emitter.emit('reader:ready', {
       metadata: book.metadata,

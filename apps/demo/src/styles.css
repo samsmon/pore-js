@@ -329,17 +329,20 @@
 
   /* The menu bar floats over the reader or docks when behaviour is 'always'.
      .reader-host--left/right/top insets and resizes the content cleanly when docked. */
+  .reader-host {
+    transition: margin 0.25s cubic-bezier(0.16, 1, 0.3, 1), width 0.25s cubic-bezier(0.16, 1, 0.3, 1), max-width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
   .reader-host--left {
     margin-left: var(--rail-w, 13rem);
     width: calc(100% - var(--rail-w, 13rem)) !important;
     max-width: calc(100% - var(--rail-w, 13rem)) !important;
-    transition: margin 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: margin 0.25s cubic-bezier(0.16, 1, 0.3, 1), width 0.25s cubic-bezier(0.16, 1, 0.3, 1), max-width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .reader-host--right {
     margin-right: var(--rail-w, 13rem);
     width: calc(100% - var(--rail-w, 13rem)) !important;
     max-width: calc(100% - var(--rail-w, 13rem)) !important;
-    transition: margin 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: margin 0.25s cubic-bezier(0.16, 1, 0.3, 1), width 0.25s cubic-bezier(0.16, 1, 0.3, 1), max-width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .reader-host--top {
     margin-top: 3.25rem;

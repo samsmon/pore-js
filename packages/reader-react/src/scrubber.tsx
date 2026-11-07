@@ -92,7 +92,7 @@ export function ReaderScrubber({ className, ticks = true, label, dir = 'ltr' }: 
                 key={c.id}
                 className="pore-scrubber__tick"
                 data-pore-scrubber-tick
-                style={{ left: `${(c.startPage / max) * 100}%` }}
+                style={{ insetInlineStart: `${(c.startPage / max) * 100}%` }}
                 title={c.label}
                 aria-hidden
               />
