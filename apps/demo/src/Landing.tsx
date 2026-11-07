@@ -3,6 +3,15 @@ import { relativeTime, type LibraryEntry } from './use-library.js';
 
 export type ModeGlyph = 'spread' | 'strip' | 'text' | 'vertical' | 'rtl' | 'page' | 'pdf';
 
+export interface SeriesInfo {
+  id: string;
+  title: string;
+  episodeIndex: number;
+  totalEpisodes: number;
+  nextBookId?: string;
+  prevBookId?: string;
+}
+
 export interface SampleBook {
   id: string;
   label: string;
@@ -11,6 +20,7 @@ export interface SampleBook {
   /** Which little layout diagram to draw on the card. */
   glyph: ModeGlyph;
   settings?: Record<string, unknown>;
+  series?: SeriesInfo;
 }
 
 /** A tiny 2-tone diagram of the layout each sample demonstrates. */
@@ -196,7 +206,14 @@ export function Landing({
               <li key={b.id}>
                 <button type="button" onClick={() => onSample(b.id)}>
                   <Glyph kind={b.glyph} />
-                  <span className="landing__sample-label">{b.label}</span>
+                  <span className="landing__sample-label">
+                    {b.label}
+                    {b.series && (
+                      <span className="landing__series-badge">
+                        Vol {b.series.episodeIndex}/{b.series.totalEpisodes}
+                      </span>
+                    )}
+                  </span>
                   <span className="landing__sample-blurb">{b.blurb}</span>
                 </button>
               </li>

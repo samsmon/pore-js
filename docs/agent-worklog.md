@@ -109,6 +109,18 @@ M5 shipped — `v0.8.0-comfort`. F3b (fixed-layout spreads) still deferred.
 
 ## Log
 
+## 2026-11-07 — Release v1.0.0-rc.3: zero-flicker manga, editorial brand & multi-episode series
+- **What:** Released `v1.0.0-rc.3`. Bumped version to `1.0.0-rc.3` across `packages/reader-core`, `packages/reader-react`, and `@pore/example-host-app`. Updated `CHANGELOG.md` with release highlights:
+  - Zero-flicker manga page turns via atomic pre-decode swap.
+  - Auto-fit double page manga spread constraints (`max-width: 50%`, `object-fit: contain`, smooth transition).
+  - Redesigned editorial brand logo & adaptive favicon suite compliant with `docs/design-language.md`.
+  - Clean mobile layout (Bookmark & Settings moved to header, clutter/scrub removed from bottom bar).
+  - Multi-episode & multi-volume series support (Manga Vol 1-3, EndPage next-volume prompt, episode pickers, `[` and `]` shortcuts).
+  - Locked 1.0 fit scale with all zoom interactions disabled (preventing accidental panel displacement).
+- **Why:** Final release milestone for Pore.js v1.0.0-rc.3 bringing robust multi-volume manga reading and editorial design fidelity to production.
+- **State:** release/v1.0.0-rc.3
+- **Notes:** Verification suite 100% passing across unit, integration, and package verification checks.
+
 ## 2026-11-07 — Release v1.0.0-rc.2: mobile layout overhaul, zero-flicker turns & engine hardening
 - **What:** Released `v1.0.0-rc.2`. Bumped versions in `packages/reader-core` and `packages/reader-react` to `1.0.0-rc.2`. Updated repository / homepage / bugs URLs from `srytmj` to `samsmon`. Added `.changeset/v1-rc2-release.md` and documented release highlights in `CHANGELOG.md`:
   - Mobile layout overhaul (compact top bar, floating bottom bar, bottom sheet drawer for TOC & Settings, touch zones, safe area insets).

@@ -129,7 +129,10 @@ describe('createImageEngine (paged-single)', () => {
     });
     const loc = collect(engine, 'reader:locationchange');
     await engine.mount();
-    expect(container.querySelectorAll('img')).toHaveLength(2);
+    const imgs = container.querySelectorAll('img');
+    expect(imgs).toHaveLength(2);
+    expect(imgs[0]?.style.maxWidth).toContain('50%');
+    expect(imgs[1]?.style.maxWidth).toContain('50%');
     engine.turn('forward');
     expect(loc.at(-1)?.page).toBe(2);
     engine.destroy();
@@ -245,6 +248,25 @@ describe('createImageEngine (paged-single)', () => {
       .querySelector('.pore-image')!
       .dispatchEvent(new WheelEvent('wheel', { deltaY: 120, bubbles: true }));
     expect(loc.at(-1)?.page).toBe(1);
+    engine.destroy();
+  });
+
+  it('zooming is disabled: ctrl+wheel and dblclick do not zoom', async () => {
+    const container = document.createElement('div');
+    const engine = createImageEngine({
+      container,
+      source: source(5),
+      bookId: 'b',
+    });
+    const zoomEvents: unknown[] = [];
+    engine.on('reader:zoomchange', (e) => zoomEvents.push(e));
+    await engine.mount();
+    const poreImage = container.querySelector('.pore-image')!;
+    poreImage.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, ctrlKey: true, bubbles: true }));
+    poreImage.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    expect(zoomEvents).toHaveLength(0);
+    const viewport = container.querySelector('.pore-image__viewport') as HTMLElement;
+    expect(viewport.style.transform).toBe('');
     engine.destroy();
   });
 

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1680" height="1200" viewBox="0 0 1680 1200">
+  <rect width="1680" height="1200" fill="#1e1b4b"/>
+
+  <rect x="36" y="124" width="760" height="1000" rx="12" fill="#818cf8" opacity="0.12" stroke="#818cf8" stroke-opacity="0.45" stroke-width="2"/>
+  <rect x="884" y="124" width="760" height="1000" rx="12" fill="#818cf8" opacity="0.12" stroke="#818cf8" stroke-opacity="0.45" stroke-width="2"/>
+
+  <text x="840" y="70" fill="#818cf8" font-family="system-ui, sans-serif" font-size="38" font-weight="700" text-anchor="middle">VOL 2 · DOUBLE SPREAD</text>
+  <text x="840" y="1168" fill="#818cf8" font-family="system-ui, sans-serif" font-size="20" text-anchor="middle" opacity="0.8">demo-manga-vol2 · RTL · CC0</text>
+</svg>

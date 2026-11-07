@@ -45,71 +45,49 @@ export class ImageZoomController {
   }
 
   get zoom(): number {
-    return this.#zoom;
+    return 1;
   }
 
   get panX(): number {
-    return this.#panX;
+    return 0;
   }
 
   get panY(): number {
-    return this.#panY;
+    return 0;
   }
 
   apply(): void {
     if (this.#isContinuous()) return;
-    const value =
-      this.#zoom === 1 && this.#panX === 0 && this.#panY === 0
-        ? ''
-        : `translate(${this.#panX}px, ${this.#panY}px) scale(${this.#zoom})`;
-    this.#transitions.zoom(this.#viewport, value, this.#prefersReducedMotion());
+    this.#transitions.zoom(this.#viewport, '', this.#prefersReducedMotion());
   }
 
-  setZoom(next: number, originX = 0.5, originY = 0.5): void {
-    const clamped = clampZoom(next);
-    if (clamped === this.#zoom) return;
-    this.#zoom = clamped;
-    if (this.#zoom === 1) {
-      this.#panX = 0;
-      this.#panY = 0;
-    } else {
-      this.#viewport.style.transformOrigin = `${originX * 100}% ${originY * 100}%`;
-    }
+  setZoom(_next: number, _originX = 0.5, _originY = 0.5): void {
+    this.#zoom = 1;
+    this.#panX = 0;
+    this.#panY = 0;
     this.apply();
-    this.#onZoomChange?.(this.#zoom);
   }
 
-  panBy(dx: number, dy: number): void {
-    if (this.#zoom === 1) return;
-    this.#panX += dx;
-    this.#panY += dy;
-    this.apply();
+  panBy(_dx: number, _dy: number): void {
+    // Zoom is locked at 1.0; no panning
   }
 
   reset(): void {
     this.#zoom = 1;
     this.#panX = 0;
     this.#panY = 0;
+    this.apply();
   }
 
-  handleWheel(ev: WheelEvent, rect: DOMRect): boolean {
-    if (!ev.ctrlKey) return false;
-    ev.preventDefault();
-    this.setZoom(
-      calculateWheelZoom(this.#zoom, ev.deltaY),
-      (ev.clientX - rect.left) / rect.width,
-      (ev.clientY - rect.top) / rect.height,
-    );
-    return true;
+  handleWheel(_ev: WheelEvent, _rect: DOMRect): boolean {
+    return false;
   }
 
-  handleDoubleTap(clientX: number, clientY: number, rect: DOMRect): void {
-    const next = calculateToggleZoom(this.#zoom);
-    this.setZoom(next, (clientX - rect.left) / rect.width, (clientY - rect.top) / rect.height);
+  handleDoubleTap(_clientX: number, _clientY: number, _rect: DOMRect): void {
+    // Zooming is disabled
   }
 
-  toggleZoom(originX = 0.5, originY = 0.5): void {
-    const next = calculateToggleZoom(this.#zoom);
-    this.setZoom(next, originX, originY);
+  toggleZoom(_originX = 0.5, _originY = 0.5): void {
+    // Zooming is disabled
   }
 }

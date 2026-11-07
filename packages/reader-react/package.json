@@ -1,6 +1,6 @@
 {
   "name": "porejs-react",
-  "version": "1.0.0-rc.2",
+  "version": "1.0.0-rc.3",
   "description": "React 19 bindings for porejs: headless <Reader> + hooks",
   "license": "MIT",
   "author": "Surya",
@@ -71,6 +71,7 @@
   },
   "peerDependencies": {
     "gsap": ">=3.12.0",
+    "porejs": "1.0.0-rc.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
@@ -80,6 +81,7 @@
     }
   },
   "devDependencies": {
+    "porejs": "workspace:*",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",

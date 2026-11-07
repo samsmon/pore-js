@@ -399,6 +399,7 @@
       @apply py-10;
     }
     .scrubber-dock {
+      display: none !important;
       bottom: calc(3.6rem + env(safe-area-inset-bottom));
       background-color: color-mix(in srgb, var(--color-surface) 95%, transparent);
       backdrop-filter: blur(16px);
@@ -409,8 +410,16 @@
       padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
       z-index: 39;
     }
+    .scrubber-dock.scrubber-dock--mobile-active {
+      display: block !important;
+      bottom: calc(3.6rem + env(safe-area-inset-bottom)) !important;
+    }
     .pore-lightbar--bottom {
       bottom: calc(3.6rem + env(safe-area-inset-bottom));
+    }
+    .pore-lightbar--mobile-edge,
+    .pore-lightbar--bottom.pore-lightbar--mobile-edge {
+      bottom: 0 !important;
     }
     .highlights-panel,
     .search,
@@ -545,10 +554,11 @@
     display: flex;
     align-items: center;
     justify-content: space-around;
-    padding-top: 0.4rem;
+    gap: 0.5rem;
+    padding-top: 0.45rem;
     padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
-    padding-left: max(0.5rem, env(safe-area-inset-left));
-    padding-right: max(0.5rem, env(safe-area-inset-right));
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
     background-color: var(--color-surface);
     border-top: 1px solid var(--color-line);
     backdrop-filter: blur(16px);
@@ -595,13 +605,13 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 3px 8px;
+    padding: 4px 12px;
     border-radius: var(--radius-control);
     border: 1px solid var(--color-line);
     background-color: var(--color-canvas);
     color: var(--color-fg);
     cursor: pointer;
-    min-width: 58px;
+    min-width: 68px;
     text-align: center;
     transition: border-color 0.15s, background-color 0.15s;
     user-select: none;
@@ -790,6 +800,204 @@
   }
   .mobile-tap-zone--right {
     width: 33.333%;
+  }
+
+  /* --- Series & Volumes in Sidebar ---------------------------------------- */
+  .bar__series {
+    margin: 0.25rem 0.25rem 0.5rem;
+    padding: 0.45rem 0.55rem;
+    border-radius: var(--radius-control);
+    background-color: color-mix(in srgb, var(--color-fg) 4%, transparent);
+    border: 1px solid var(--color-line);
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+  .bar__series-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+  .bar__series-title {
+    color: var(--color-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .bar__series-badge {
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 0.1rem 0.4rem;
+    border-radius: 9999px;
+    background-color: color-mix(in srgb, var(--color-fg) 8%, transparent);
+    color: var(--color-fg);
+    border: 1px solid color-mix(in srgb, var(--color-line) 80%, transparent);
+    font-variant-numeric: tabular-nums;
+  }
+  .bar__series-row {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .bar__series-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--color-line);
+    background: transparent;
+    color: var(--color-fg);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background-color 0.15s, opacity 0.15s;
+  }
+  .bar__series-arrow:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--color-fg) 8%, transparent);
+  }
+  .bar__series-arrow:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  /* --- Landing Series Badge ----------------------------------------------- */
+  .landing__series-badge {
+    margin-left: 0.4rem;
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 0.1rem 0.45rem;
+    border-radius: 9999px;
+    background-color: color-mix(in srgb, var(--color-fg) 8%, transparent);
+    color: var(--color-fg);
+    border: 1px solid var(--color-line);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pore-lightbar--mobile-edge {
+    bottom: 0px !important;
+  }
+
+  /* --- Mobile Sheet Tabs & Episodes --------------------------------------- */
+  .mobile-sheet__tabs {
+    display: flex;
+    background-color: color-mix(in srgb, var(--color-fg) 4%, transparent);
+    padding: 0.2rem;
+    border-radius: var(--radius-control);
+    margin-bottom: 0.75rem;
+  }
+  .mobile-sheet__tab {
+    flex: 1;
+    text-align: center;
+    padding: 0.4rem 0.5rem;
+    border: 0;
+    background: transparent;
+    border-radius: calc(var(--radius-control) - 2px);
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--color-muted);
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+  }
+  .mobile-sheet__tab.active {
+    background-color: var(--color-surface);
+    color: var(--color-fg);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  }
+  .mobile-episodes {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .mobile-episodes__quick-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.45rem 0.6rem;
+    border-radius: var(--radius-control);
+    background-color: color-mix(in srgb, var(--color-fg) 3%, transparent);
+    border: 1px solid var(--color-line);
+  }
+  .mobile-episodes__nav-btn {
+    padding: 0.3rem 0.7rem;
+    font-size: 0.78rem;
+    font-weight: 500;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--color-line);
+    background-color: var(--color-surface);
+    color: var(--color-fg);
+    cursor: pointer;
+    transition: background-color 0.15s, opacity 0.15s;
+  }
+  .mobile-episodes__nav-btn:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--color-fg) 8%, transparent);
+  }
+  .mobile-episodes__nav-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .mobile-episodes__current-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .mobile-episodes__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .mobile-episodes__item-wrap {
+    border-bottom: 1px solid color-mix(in srgb, var(--color-line) 60%, transparent);
+  }
+  .mobile-episodes__item-wrap:last-child {
+    border-bottom: 0;
+  }
+  .mobile-episodes__item {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 0.5rem;
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-control);
+    text-align: left;
+    color: var(--color-fg);
+    cursor: pointer;
+    transition: background-color 0.15s;
+  }
+  .mobile-episodes__item:hover,
+  .mobile-episodes__item:focus-visible {
+    background-color: color-mix(in srgb, var(--color-fg) 6%, transparent);
+  }
+  .mobile-episodes__item.active {
+    background-color: color-mix(in srgb, var(--color-fg) 6%, transparent);
+  }
+  .mobile-episodes__item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+  .mobile-episodes__item-label {
+    font-size: 0.88rem;
+    font-weight: 500;
+  }
+  .mobile-episodes__item-blurb {
+    font-size: 0.75rem;
+    color: var(--color-muted);
+  }
+  .mobile-episodes__current-pill {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 9999px;
+    background-color: var(--color-fg);
+    color: var(--color-canvas);
   }
 
   .bar__separator {

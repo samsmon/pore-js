@@ -34,7 +34,7 @@ import {
   Bookmark, BookmarkCheck,
   File, BookOpen, ArrowDownToLine, ArrowRightToLine,
   PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen,
-  SlidersHorizontal,
+  Layers,
 } from 'lucide-react';
 import { useTheme } from './theme.js';
 import { useAutoHide } from './use-auto-hide.js';
@@ -42,12 +42,7 @@ import type { MenuBar } from './use-menu-bar.js';
 import { MenuBarSettings } from './MenuBarSettings.js';
 import { citation, copyText, deepLink } from './share.js';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './components/ui/select.js';
-
-
-interface BookOpt {
-  id: string;
-  label: string;
-}
+import type { SampleBook } from './Landing.js';
 
 const HIGHLIGHT_COLORS = ['#fef08a', '#bbf7d0', '#bfdbfe', '#fbcfe8'];
 const DEFAULT_HIGHLIGHT = HIGHLIGHT_COLORS[0]!;
@@ -109,7 +104,7 @@ export function Chrome({
   settingsOpen,
   onToggleSettings,
 }: {
-  books: BookOpt[];
+  books: SampleBook[];
   bookId: string;
   onBook: (id: string) => void;
   onHome: () => void;
@@ -197,7 +192,7 @@ export function Chrome({
     return () => mql.removeEventListener('change', onChange);
   }, []);
 
-  type MobileSheet = 'toc' | 'settings' | null;
+  type MobileSheet = 'toc' | 'settings' | 'episodes' | null;
   const [mobileSheet, setMobileSheet] = useState<MobileSheet>(null);
   const [scrubberOpen, setScrubberOpen] = useState(false);
   const [mobileChromeVisible, setMobileChromeVisible] = useState(true);
@@ -268,16 +263,15 @@ export function Chrome({
     return () => window.removeEventListener('keydown', onKey);
   }, [ttsOpen, bookmarksOpen, highlightsOpen, searchOpen, settingsOpen, onToggleSettings, mobileSheet, closeMobileSheet]);
 
-  // Mobile ergonomic tap-to-toggle overlay handler
+  // Center area click/tap handler: toggles desktop sidebar or mobile chrome
   useEffect(() => {
     const onWindowClick = (e: MouseEvent) => {
-      if (window.innerWidth > 768) return;
       if (overlayOpen || mobileSheet !== null) return;
       const target = e.target as HTMLElement | null;
       if (!target) return;
       if (
         target.closest(
-          'button, a, input, select, textarea, [data-pore-chrome-handle], .mobile-header, .mobile-bottom-bar, .mobile-sheet, .highlights-panel, .search, .selection-toolbar, .toast, .notice, .endpage, .pore-select-content'
+          'button, a, input, select, textarea, [data-pore-chrome-handle], .bar, .bar--collapsed, .mobile-header, .mobile-bottom-bar, .mobile-sheet, .highlights-panel, .search, .selection-toolbar, .toast, .notice, .endpage, .pore-select-content, [role="menu"], [role="dialog"], [role="listbox"], [role="button"], [data-pore-settings-inline], .footnote'
         )
       ) {
         return;
@@ -286,14 +280,18 @@ export function Chrome({
       if (sel && sel.length > 0) return;
 
       const r = e.clientX / window.innerWidth;
-      if (r >= 0.33 && r <= 0.67) {
-        setMobileChromeVisible((v) => !v);
+      if (r >= 0.30 && r <= 0.70) {
+        if (window.innerWidth > 768) {
+          menu.toggleCollapsed();
+        } else {
+          setMobileChromeVisible((v) => !v);
+        }
       }
     };
 
     window.addEventListener('click', onWindowClick);
     return () => window.removeEventListener('click', onWindowClick);
-  }, [overlayOpen, mobileSheet]);
+  }, [overlayOpen, mobileSheet, menu]);
 
   // Auto-hide when the user chose it, or always in fullscreen. Panels pin it open.
   const isAuto = menu.behaviour === 'auto-hide';
@@ -315,7 +313,34 @@ export function Chrome({
 
   const barHidden = autoHiding && autoHidden;
   const mobileBarHidden = (!mobileChromeVisible || barHidden) && mobileSheet === null && !overlayOpen;
-  const currentBookLabel = books.find((b) => b.id === bookId)?.label || (droppedName ?? 'Book');
+  
+  const currentSample = books.find((b) => b.id === bookId);
+  const currentBookLabel = currentSample?.label || (droppedName ?? 'Book');
+  const series = currentSample?.series;
+  const seriesBooks = series ? books.filter((b) => b.series?.id === series.id) : [];
+  const nextBook = series?.nextBookId ? books.find((b) => b.id === series.nextBookId) : undefined;
+  const prevBook = series?.prevBookId ? books.find((b) => b.id === series.prevBookId) : undefined;
+
+  // Keyboard navigation for series volumes: `[` for prev, `]` for next
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = e.target as HTMLElement | null;
+      if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
+      if (e.key === ']' && nextBook) {
+        onBook(nextBook.id);
+      } else if (e.key === '[' && prevBook) {
+        onBook(prevBook.id);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [nextBook, prevBook, onBook]);
+
+  const pageDisplay =
+    loc?.page !== undefined && loc?.total
+      ? `p. ${loc.page + 1} / ${loc.total}`
+      : loc?.label ?? '…';
 
 
   const collapsed = menu.collapsed && !settingsOpen;
@@ -362,6 +387,57 @@ export function Chrome({
             ))}
           </SelectContent>
         </Select>
+      )}
+
+      {!collapsed && series && seriesBooks.length > 1 && (
+        <div className="bar__series" title={series.title}>
+          <div className="bar__series-header">
+            <span className="bar__series-title">{series.title}</span>
+            <span className="bar__series-badge">
+              Vol {series.episodeIndex}/{series.totalEpisodes}
+            </span>
+          </div>
+          <div className="bar__series-row">
+            <button
+              type="button"
+              className="bar__series-arrow"
+              disabled={!prevBook}
+              onClick={() => prevBook && onBook(prevBook.id)}
+              title={prevBook ? `Previous: ${prevBook.label}` : 'No previous volume'}
+              aria-label="Previous volume"
+            >
+              ←
+            </button>
+            <Select
+              value={bookId}
+              onValueChange={(val) => val && onBook(val)}
+            >
+              <SelectTrigger
+                aria-label="Volume / Episode"
+                className="flex-1 h-7 text-[0.78rem] border border-fg/10 bg-fg/5 hover:bg-fg/10 transition-colors"
+              >
+                <SelectValue placeholder="Volume" />
+              </SelectTrigger>
+              <SelectContent>
+                {seriesBooks.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>
+                    {b.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <button
+              type="button"
+              className="bar__series-arrow"
+              disabled={!nextBook}
+              onClick={() => nextBook && onBook(nextBook.id)}
+              title={nextBook ? `Next: ${nextBook.label}` : 'No next volume'}
+              aria-label="Next volume"
+            >
+              →
+            </button>
+          </div>
+        </div>
       )}
 
       <button
@@ -638,6 +714,16 @@ export function Chrome({
               <Search size={18} />
             </button>
           )}
+          {bm.supported && (
+            <button
+              className={`mobile-header__btn${bm.isBookmarkedHere ? ' active' : ''}`}
+              onClick={() => bm.toggle()}
+              aria-label={bm.isBookmarkedHere ? 'Remove bookmark' : 'Bookmark this page'}
+              title="Bookmark"
+            >
+              {bm.isBookmarkedHere ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
+            </button>
+          )}
           <button
             className="mobile-header__btn"
             onClick={toggleTheme}
@@ -645,6 +731,20 @@ export function Chrome({
             title="Toggle theme"
           >
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+          <button
+            className={`mobile-header__btn${mobileSheet === 'settings' ? ' active' : ''}`}
+            onClick={() => {
+              if (mobileSheet === 'settings') closeMobileSheet();
+              else {
+                if (!settingsOpen) onToggleSettings();
+                setMobileSheet('settings');
+              }
+            }}
+            aria-label="Reader settings"
+            title="Reader settings"
+          >
+            <Settings size={18} />
           </button>
         </div>
       </header>
@@ -688,6 +788,24 @@ export function Chrome({
           <span className="mobile-btn__label">TOC</span>
         </button>
 
+        {seriesBooks.length > 1 && (
+          <button
+            className={`mobile-btn${mobileSheet === 'episodes' ? ' active' : ''}`}
+            onClick={() => {
+              if (mobileSheet === 'episodes') closeMobileSheet();
+              else {
+                if (settingsOpen) onToggleSettings();
+                setMobileSheet('episodes');
+              }
+            }}
+            aria-label="Episodes & Volumes"
+            title="Volumes / Episodes"
+          >
+            <Layers size={19} />
+            <span className="mobile-btn__label">Volumes</span>
+          </button>
+        )}
+
         {/* Chapter & Page position indicator */}
         <button
           className={`mobile-pos-indicator${scrubberOpen ? ' active' : ''}`}
@@ -695,7 +813,7 @@ export function Chrome({
           aria-label="Toggle scrubber"
           title="Toggle quick scrubber"
         >
-          <span className="mobile-pos-indicator__main">{loc?.label ?? '…'}</span>
+          <span className="mobile-pos-indicator__main">{pageDisplay}</span>
           {progress && (
             <span className="mobile-pos-indicator__sub">
               {progress.chapterCount > 1
@@ -703,48 +821,6 @@ export function Chrome({
                 : `${Math.round(progressPercent)}%`}
             </span>
           )}
-        </button>
-
-        {/* Quick Scrubber trigger */}
-        <button
-          className={`mobile-btn${scrubberOpen ? ' active' : ''}`}
-          onClick={() => setScrubberOpen((v) => !v)}
-          aria-label="Quick scrubber"
-          title="Quick scrubber"
-        >
-          <SlidersHorizontal size={19} />
-          <span className="mobile-btn__label">Scrub</span>
-        </button>
-
-        {/* Bookmark trigger */}
-        {bm.supported && (
-          <button
-            className={`mobile-btn${bm.isBookmarkedHere ? ' active' : ''}`}
-            onClick={() => bm.toggle()}
-            aria-label={bm.isBookmarkedHere ? 'Remove bookmark' : 'Bookmark this page'}
-            title="Bookmark"
-          >
-            {bm.isBookmarkedHere ? <BookmarkCheck size={19} /> : <Bookmark size={19} />}
-            <span className="mobile-btn__label">Bookmark</span>
-          </button>
-        )}
-
-        {/* Settings button */}
-        <button
-          className={`mobile-btn${mobileSheet === 'settings' || settingsOpen ? ' active' : ''}`}
-          onClick={() => {
-            if (mobileSheet === 'settings') {
-              closeMobileSheet();
-            } else {
-              if (!settingsOpen) onToggleSettings();
-              setMobileSheet('settings');
-            }
-          }}
-          aria-label="Reader settings"
-          title="Reader settings"
-        >
-          <Settings size={19} />
-          <span className="mobile-btn__label">Settings</span>
         </button>
       </nav>
 
@@ -768,7 +844,11 @@ export function Chrome({
 
             <div className="mobile-sheet__header">
               <h2 className="mobile-sheet__title">
-                {mobileSheet === 'toc' ? 'Table of Contents' : 'Settings'}
+                {mobileSheet === 'toc'
+                  ? 'Table of Contents'
+                  : mobileSheet === 'episodes'
+                    ? 'Episodes & Volumes'
+                    : 'Settings'}
               </h2>
               <button
                 className="mobile-sheet__close"
@@ -780,7 +860,89 @@ export function Chrome({
             </div>
 
             <div className="mobile-sheet__body">
-              {mobileSheet === 'toc' ? (
+              {(mobileSheet === 'toc' || mobileSheet === 'episodes') && seriesBooks.length > 1 && (
+                <div className="mobile-sheet__tabs" role="tablist">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={mobileSheet === 'toc'}
+                    className={`mobile-sheet__tab${mobileSheet === 'toc' ? ' active' : ''}`}
+                    onClick={() => setMobileSheet('toc')}
+                  >
+                    Chapters
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={mobileSheet === 'episodes'}
+                    className={`mobile-sheet__tab${mobileSheet === 'episodes' ? ' active' : ''}`}
+                    onClick={() => setMobileSheet('episodes')}
+                  >
+                    Volumes ({seriesBooks.length})
+                  </button>
+                </div>
+              )}
+
+              {mobileSheet === 'episodes' ? (
+                <div className="mobile-episodes">
+                  <div className="mobile-episodes__quick-nav">
+                    <button
+                      type="button"
+                      className="mobile-episodes__nav-btn"
+                      disabled={!prevBook}
+                      onClick={() => {
+                        if (prevBook) {
+                          onBook(prevBook.id);
+                          closeMobileSheet();
+                        }
+                      }}
+                    >
+                      ← Prev Vol
+                    </button>
+                    <span className="mobile-episodes__current-badge">
+                      Vol {series?.episodeIndex} of {series?.totalEpisodes}
+                    </span>
+                    <button
+                      type="button"
+                      className="mobile-episodes__nav-btn"
+                      disabled={!nextBook}
+                      onClick={() => {
+                        if (nextBook) {
+                          onBook(nextBook.id);
+                          closeMobileSheet();
+                        }
+                      }}
+                    >
+                      Next Vol →
+                    </button>
+                  </div>
+                  <ul className="mobile-episodes__list" role="list">
+                    {seriesBooks.map((b) => {
+                      const isActive = b.id === bookId;
+                      return (
+                        <li key={b.id} className="mobile-episodes__item-wrap">
+                          <button
+                            type="button"
+                            className={`mobile-episodes__item${isActive ? ' active' : ''}`}
+                            onClick={() => {
+                              onBook(b.id);
+                              closeMobileSheet();
+                            }}
+                          >
+                            <div className="mobile-episodes__item-info">
+                              <span className="mobile-episodes__item-label">{b.label}</span>
+                              <span className="mobile-episodes__item-blurb">{b.blurb}</span>
+                            </div>
+                            {isActive && (
+                              <span className="mobile-episodes__current-pill">Reading</span>
+                            )}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ) : mobileSheet === 'toc' ? (
                 <MobileTocList
                   onSelect={(href) => {
                     reader.goToHref(href);
@@ -825,13 +987,13 @@ export function Chrome({
       {loading && <div className="progress progress--loading" aria-hidden />}
 
       {/* Minimal edge lightbar when style is 'lightbar', or when style is 'normal' and chrome is hidden */}
-      {progressStyle !== 'hidden' && (progressStyle === 'lightbar' || barHidden) && (
+      {progressStyle !== 'hidden' && (progressStyle === 'lightbar' || barHidden || (isMobile && mobileBarHidden)) && (
         <div
-          className={`pore-lightbar pore-lightbar--${progressPos}`}
+          className={`pore-lightbar pore-lightbar--${progressPos}${isMobile && mobileBarHidden ? ' pore-lightbar--mobile-edge' : ''}`}
           style={
             progressPos === 'bottom'
-              ? { height: `${progressThickness}px` }
-              : { width: `${progressThickness}px` }
+              ? { height: isMobile && mobileBarHidden ? '2px' : `${progressThickness}px` }
+              : { width: isMobile && mobileBarHidden ? '2px' : `${progressThickness}px` }
           }
           role="progressbar"
           aria-valuenow={Math.round(progressPercent)}
@@ -858,8 +1020,8 @@ export function Chrome({
         </div>
       )}
 
-      {/* Interactive scrubber dock in normal mode */}
-      {progressStyle === 'normal' && (
+      {/* Interactive scrubber dock in normal mode: on mobile only shown when scrubberOpen is true and chrome visible */}
+      {progressStyle === 'normal' && (!isMobile || (scrubberOpen && !mobileBarHidden)) && (
         <div
           className={`scrubber-dock${barHidden && !scrubberOpen ? ' scrubber-dock--hidden' : ''}${
             scrubberOpen ? ' scrubber-dock--mobile-active' : ''
@@ -928,9 +1090,24 @@ export function Chrome({
           )}
           <div className="endpage__actions">
             {endPage.kind === 'book' ? (
-              <button className="primary" onClick={() => reader.goto(0)}>
-                Restart from the beginning
-              </button>
+              <>
+                {nextBook && (
+                  <button className="primary" onClick={() => onBook(nextBook.id)}>
+                    Next: {nextBook.label} →
+                  </button>
+                )}
+                {prevBook && (
+                  <button className="secondary" onClick={() => onBook(prevBook.id)}>
+                    ← Previous: {prevBook.label}
+                  </button>
+                )}
+                <button
+                  className={nextBook ? 'secondary' : 'primary'}
+                  onClick={() => reader.goto(0)}
+                >
+                  Restart from the beginning
+                </button>
+              </>
             ) : (
               endPage.hasNext && (
                 <button className="primary" onClick={() => reader.turn('forward')}>

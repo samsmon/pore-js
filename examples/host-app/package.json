@@ -1,6 +1,6 @@
 {
   "name": "@pore/example-host-app",
-  "version": "0.0.0",
+  "version": "1.0.0-rc.3",
   "private": true,
   "type": "module",
   "description": "Example: embedding porejs in a third-party site (a fake manga library)",

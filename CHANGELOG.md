@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.0.0-rc.3 — 2026-11-07
+
+### Highlights
+
+- **Zero-flicker manga page turns via atomic pre-decode swap** — images pre-decode in memory and swap synchronously without white flash or layout jitter.
+- **Auto-fit double page manga spread constraints** — strict dual-page spread containment (`max-width: 50%`, `object-fit: contain`) with smooth transitions during layout shifts and sidebar toggles.
+- **Editorial brand logo & adaptive favicon suite** — bespoke editorial brand mark, dynamic SVG favicon responding to color scheme, and multi-resolution PNG/ICO suite compliant with `docs/design-language.md`.
+- **Clean mobile layout** — streamlined bottom navigation bar removing scrubber clutter, moving Bookmark and Settings actions to the sticky mobile header with touch-optimized target sizing.
+- **Multi-episode & multi-volume series support** — bundled Manga Volumes 1–3 fixtures, interactive EndPage next-volume prompt, header episode selector, and desktop bracket hotkeys (`[` / `]`).
+- **Locked 1.0 fit scale** — zoom and panning interactions disabled across reading modes to eliminate accidental panel displacement during turns and gestures.
+
 ## 1.0.0-rc.2 — 2026-11-07
 
 ### Highlights

@@ -271,19 +271,36 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
     viewport.style.filter = filters.join(' ');
   };
 
-  const applyFitStyle = (img: HTMLImageElement | HTMLCanvasElement) => {
-    const map: Record<ImageEngineSettings['fit'], string> = {
+  const applyFitStyle = (
+    img: HTMLImageElement | HTMLCanvasElement,
+    isDouble = !isContinuous() && spreads[currentSpread]?.pages.length === 2,
+  ) => {
+    const singleMap: Record<ImageEngineSettings['fit'], string> = {
       width: 'width:100%;height:auto;',
       height: 'height:100%;width:auto;',
       contain: 'max-width:100%;max-height:100%;width:auto;height:auto;',
       original: 'width:auto;height:auto;max-width:none;',
       smart: 'max-width:100%;max-height:100%;width:auto;height:auto;',
     };
+    const doubleMap: Record<ImageEngineSettings['fit'], string> = {
+      width: 'width:calc(50% - (var(--pore-page-gap, 0px) / 2));height:auto;flex:0 1 auto;min-width:0;',
+      height: 'height:100%;width:auto;flex:0 1 auto;min-width:0;',
+      contain:
+        'max-width:calc(50% - (var(--pore-page-gap, 0px) / 2));width:auto;height:auto;max-height:100%;object-fit:contain;flex:0 1 auto;min-width:0;min-height:0;',
+      original: 'width:auto;height:auto;max-width:none;flex:0 1 auto;min-width:0;',
+      smart:
+        'max-width:calc(50% - (var(--pore-page-gap, 0px) / 2));width:auto;height:auto;max-height:100%;object-fit:contain;flex:0 1 auto;min-width:0;min-height:0;',
+    };
     const transition = prefersReducedMotion()
       ? ''
       : 'transition:width 0.25s cubic-bezier(0.16, 1, 0.3, 1),max-width 0.25s cubic-bezier(0.16, 1, 0.3, 1),height 0.25s cubic-bezier(0.16, 1, 0.3, 1),max-height 0.25s cubic-bezier(0.16, 1, 0.3, 1);';
-    img.style.cssText = `display:block;${map[settings.fit]}${transition}`;
-    if (settings.maxWidth) img.style.maxWidth = `${settings.maxWidth}px`;
+    const baseStyle = isDouble ? doubleMap[settings.fit] : singleMap[settings.fit];
+    img.style.cssText = `display:block;${baseStyle}${transition}`;
+    if (settings.maxWidth) {
+      img.style.maxWidth = isDouble
+        ? `min(calc(50% - (var(--pore-page-gap, 0px) / 2)), ${settings.maxWidth}px)`
+        : `${settings.maxWidth}px`;
+    }
     if (settings.maxHeight) img.style.maxHeight = `${settings.maxHeight}px`;
   };
 
@@ -362,6 +379,7 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
   // ---- paged rendering ----------------------------------------------------------
 
   let renderedSpread = -1;
+  let pagedRenderToken = 0;
 
   const bitmapMode = () =>
     settings.loadingMethod === 'bitmap' && settings.preloadStrategy !== 'all';
@@ -369,26 +387,28 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
   const renderPaged = () => {
     const spread = spreads[currentSpread];
     if (!spread) return;
+    const isDouble = spread.pages.length === 2;
     viewport.style.cssText =
       'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:var(--pore-page-gap,0px);';
 
     if (renderedSpread === currentSpread && viewport.children.length === spread.pages.length) {
       for (const el of Array.from(viewport.children)) {
         if (el instanceof HTMLImageElement || el instanceof HTMLCanvasElement) {
-          applyFitStyle(el);
+          applyFitStyle(el, isDouble);
         }
       }
       return;
     }
 
-    renderedSpread = currentSpread;
+    const targetSpread = currentSpread;
+    const token = ++pagedRenderToken;
     const newChildren: HTMLElement[] = [];
     for (const pageIndex of spread.pages) {
       if (bitmapMode()) {
         const canvas = doc.createElement('canvas');
         canvas.setAttribute('role', 'img');
         canvas.setAttribute('aria-label', `page ${pageIndex + 1}`);
-        applyFitStyle(canvas);
+        applyFitStyle(canvas, isDouble);
         const syncBmp = loader?.getBitmapSync(pageIndex);
         if (syncBmp) {
           canvas.width = syncBmp.width;
@@ -411,12 +431,40 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
       const syncUrl = loader?.getUrl(pageIndex);
       img.decoding = syncUrl ? 'sync' : 'async';
       img.alt = altFor(pageIndex);
-      applyFitStyle(img);
+      applyFitStyle(img, isDouble);
       img.addEventListener('load', () => maybeDiscoverWide(pageIndex, img), { once: true });
       loadInto(img, pageIndex);
       newChildren.push(img);
     }
-    viewport.replaceChildren(...newChildren);
+
+    if (bitmapMode() || viewport.children.length === 0) {
+      renderedSpread = targetSpread;
+      viewport.replaceChildren(...newChildren);
+      return;
+    }
+
+    const decodable = newChildren.filter(
+      (el): el is HTMLImageElement => el instanceof HTMLImageElement && typeof el.decode === 'function',
+    );
+
+    if (decodable.length === 0) {
+      renderedSpread = targetSpread;
+      viewport.replaceChildren(...newChildren);
+      return;
+    }
+
+    const decodePromises = decodable.map((img) => img.decode().catch(() => {}));
+    const timeoutPromise = new Promise<void>((resolve) => {
+      setTimeout(resolve, 100);
+    });
+
+    void Promise.race([Promise.allSettled(decodePromises), timeoutPromise]).then(() => {
+      if (destroyed || token !== pagedRenderToken || currentSpread !== targetSpread) {
+        return;
+      }
+      renderedSpread = targetSpread;
+      viewport.replaceChildren(...newChildren);
+    });
   };
 
   const maybeDiscoverWide = (pageIndex: number, img: HTMLImageElement) =>
@@ -553,6 +601,7 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
 
   const rebuildSpreads = (preserveLeadingPage?: number) => {
     if (!manifest) return;
+    pagedRenderToken++;
     renderedSpread = -1;
     const leading = preserveLeadingPage ?? currentPage();
     spreads = buildSpreads(manifest.pages, {
@@ -679,9 +728,6 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
   const onPointerMove = (ev: PointerEvent) => {
     if (!pointer || ev.pointerId !== pointer.id) return;
     if (Math.hypot(ev.clientX - pointer.x, ev.clientY - pointer.y) > TAP_SLOP) clearLongPress();
-    if (zoomController.zoom === 1) return;
-    zoomController.panBy(ev.clientX - pointer.x, ev.clientY - pointer.y);
-    pointer = { ...pointer, x: ev.clientX, y: ev.clientY };
   };
 
   const onPointerUp = (ev: PointerEvent) => {
@@ -697,46 +743,12 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
     const dt = Date.now() - pointer.t;
     pointer = null;
     const isTouch = ev.pointerType !== 'mouse';
-    if (zoomController.zoom > 1) {
-      // when zoomed, a quick near-stationary tap can still be a double-tap to reset
-      const now = Date.now();
-      if (
-        isTouch &&
-        settings.doubleTapZoom &&
-        !isContinuous() &&
-        Math.hypot(dx, dy) <= TAP_SLOP &&
-        dt <= TAP_MS &&
-        now - lastTap.t < 300 &&
-        Math.hypot(ev.clientX - lastTap.x, ev.clientY - lastTap.y) < 40
-      ) {
-        lastTap = { t: 0, x: 0, y: 0 };
-        touchDblTapAt = now;
-        zoomController.setZoom(1);
-        return;
-      }
-      if (Math.hypot(dx, dy) <= TAP_SLOP && dt <= TAP_MS) {
-        lastTap = { t: now, x: ev.clientX, y: ev.clientY };
-      }
-      return; // otherwise: panning, not a tap/swipe
-    }
 
     const dist = Math.hypot(dx, dy);
     if (dist <= TAP_SLOP && dt <= TAP_MS) {
       const now = Date.now();
-      // double-tap → zoom to that point (toggle fit ↔ 2×); touch only (mouse
-      // double-click zoom is handled by onDblClick)
-      if (
-        isTouch &&
-        settings.doubleTapZoom &&
-        !isContinuous() &&
-        now - lastTap.t < 300 &&
-        Math.hypot(ev.clientX - lastTap.x, ev.clientY - lastTap.y) < 40
-      ) {
-        lastTap = { t: 0, x: 0, y: 0 };
+      if (isTouch && now - lastTap.t < 300) {
         touchDblTapAt = now;
-        const rect = root.getBoundingClientRect();
-        zoomController.handleDoubleTap(ev.clientX, ev.clientY, rect);
-        return;
       }
       lastTap = { t: now, x: ev.clientX, y: ev.clientY };
       const rect = root.getBoundingClientRect();
@@ -760,8 +772,7 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
   };
 
   const onWheel = (ev: WheelEvent) => {
-    const rect = root.getBoundingClientRect();
-    if (zoomController.handleWheel(ev, rect)) return;
+    if (ev.ctrlKey) return;
     if (isContinuous()) return;
     const mode = settings.scrollToTurn;
     if (mode === 'wheel' || mode === 'both') {
@@ -773,7 +784,6 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
   const onDblClick = () => {
     if (Date.now() - touchDblTapAt < 500) return; // handled by the touch double-tap
     if (settings.doubleClickFullscreen) void toggleFullscreen();
-    else zoomController.toggleZoom();
   };
 
   async function toggleFullscreen(): Promise<void> {
@@ -974,6 +984,7 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
   function destroy(): void {
     flushSave();
     destroyed = true;
+    pagedRenderToken++;
     renderedSpread = -1;
     transitions.cancel();
     autonav.destroy();

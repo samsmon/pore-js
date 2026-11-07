@@ -65,10 +65,46 @@ function PendingNav({
 const BOOKS: SampleBook[] = [
   {
     id: 'demo-manga',
-    label: 'Manga',
+    label: 'Manga (Vol 1)',
     blurb: 'Right-to-left, double-page spreads',
     glyph: 'spread',
     settings: { layout: 'paged-double', direction: 'rtl' },
+    series: {
+      id: 'series-manga',
+      title: 'Demo Manga',
+      episodeIndex: 1,
+      totalEpisodes: 3,
+      nextBookId: 'demo-manga-vol2',
+    },
+  },
+  {
+    id: 'demo-manga-vol2',
+    label: 'Manga (Vol 2)',
+    blurb: 'Volume 2 — The Journey continues',
+    glyph: 'spread',
+    settings: { layout: 'paged-double', direction: 'rtl' },
+    series: {
+      id: 'series-manga',
+      title: 'Demo Manga',
+      episodeIndex: 2,
+      totalEpisodes: 3,
+      prevBookId: 'demo-manga',
+      nextBookId: 'demo-manga-vol3',
+    },
+  },
+  {
+    id: 'demo-manga-vol3',
+    label: 'Manga (Vol 3)',
+    blurb: 'Volume 3 — The Climax and Epilogue',
+    glyph: 'spread',
+    settings: { layout: 'paged-double', direction: 'rtl' },
+    series: {
+      id: 'series-manga',
+      title: 'Demo Manga',
+      episodeIndex: 3,
+      totalEpisodes: 3,
+      prevBookId: 'demo-manga-vol2',
+    },
   },
   {
     id: 'demo-webtoon',
@@ -261,7 +297,7 @@ export function App() {
             <ReaderAnnouncer />
             <PendingNav navRef={pendingNavRef} onArrived={onArrived} />
             <Chrome
-              books={BOOKS.map((b) => ({ id: b.id, label: b.label }))}
+              books={BOOKS}
               bookId={view.kind === 'sample' ? view.bookId : ''}
               onBook={openSample}
               onHome={goHome}

@@ -1,6 +1,6 @@
 {
   "name": "porejs",
-  "version": "1.0.0-rc.2",
+  "version": "1.0.0-rc.3",
   "description": "Framework-agnostic web reader engine for manga, comics and books (EPUB, PDF, CBZ): sources, image engine, text engine, position model",
   "license": "MIT",
   "author": "Surya",
