@@ -21,17 +21,20 @@ import {
   useTts,
   useResumedFromPage,
   useChromeVisible,
+  useTableOfContents,
   type ImageEngineSettings,
   type TextEngineSettings,
   type TtsVoiceLike,
 } from 'porejs-react';
-import { useEffect, useState } from 'react';
+import type { TocEntry } from 'porejs';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Home, Library, Search, Link as LinkIcon, Highlighter, Volume2,
   Sun, Moon, Coffee, Settings, ArrowLeft, ArrowRight, Pin, PinOff,
   Bookmark, BookmarkCheck,
   File, BookOpen, ArrowDownToLine, ArrowRightToLine,
   PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { useTheme } from './theme.js';
 import { useAutoHide } from './use-auto-hide.js';
@@ -48,6 +51,48 @@ interface BookOpt {
 
 const HIGHLIGHT_COLORS = ['#fef08a', '#bbf7d0', '#bfdbfe', '#fbcfe8'];
 const DEFAULT_HIGHLIGHT = HIGHLIGHT_COLORS[0]!;
+
+function MobileTocList({ onSelect }: { onSelect: (href: string) => void }) {
+  const toc = useTableOfContents();
+  const items = useMemo(() => {
+    function flatten(
+      entries: TocEntry[],
+      depth = 0,
+    ): { label: string; href: string; depth: number }[] {
+      return entries.flatMap((e) => [
+        { label: e.label, href: e.href, depth },
+        ...flatten(e.children, depth + 1),
+      ]);
+    }
+    return flatten(toc).filter((e) => e.href);
+  }, [toc]);
+
+  if (items.length === 0) {
+    return (
+      <div className="mobile-toc__empty">
+        No table of contents available for this book.
+      </div>
+    );
+  }
+
+  return (
+    <nav className="mobile-toc" aria-label="Table of contents">
+      <ul className="mobile-toc__list" role="list">
+        {items.map((item, i) => (
+          <li key={`${item.href}-${i}`} className="mobile-toc__item-wrap">
+            <button
+              className="mobile-toc__item"
+              style={{ paddingLeft: `${0.75 + item.depth * 1}rem` }}
+              onClick={() => onSelect(item.href)}
+            >
+              <span className="mobile-toc__label">{item.label}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
 
 export function Chrome({
   books,
@@ -140,8 +185,48 @@ export function Chrome({
   const canAnnotate = isText || isPdf;
   const menuPos = menu.placement;
 
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth <= 768 : false
+  );
+
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 768px)');
+    setIsMobile(mql.matches);
+    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mql.addEventListener('change', onChange);
+    return () => mql.removeEventListener('change', onChange);
+  }, []);
+
+  type MobileSheet = 'toc' | 'settings' | null;
+  const [mobileSheet, setMobileSheet] = useState<MobileSheet>(null);
+  const [scrubberOpen, setScrubberOpen] = useState(false);
+  const [mobileChromeVisible, setMobileChromeVisible] = useState(true);
+
+  // Sync reader chrome-toggle with mobile visibility
+  useEffect(() => {
+    setMobileChromeVisible(chromeVisible);
+  }, [chromeVisible]);
+
+  // Keep settingsOpen and mobileSheet in sync on mobile
+  useEffect(() => {
+    if (isMobile) {
+      if (settingsOpen && mobileSheet !== 'settings') {
+        setMobileSheet('settings');
+      } else if (!settingsOpen && mobileSheet === 'settings') {
+        setMobileSheet(null);
+      }
+    }
+  }, [isMobile, settingsOpen, mobileSheet]);
+
+  const closeMobileSheet = useCallback(() => {
+    if (mobileSheet === 'settings' && settingsOpen) {
+      onToggleSettings();
+    }
+    setMobileSheet(null);
+  }, [mobileSheet, settingsOpen, onToggleSettings]);
+
   const overlayOpen =
-    settingsOpen || searchOpen || endPage !== null || highlightsOpen || bookmarksOpen || ttsOpen;
+    settingsOpen || searchOpen || endPage !== null || highlightsOpen || bookmarksOpen || ttsOpen || mobileSheet !== null;
 
   // `b` toggles a bookmark at the current page (unless typing in a field)
   useEffect(() => {
@@ -161,6 +246,11 @@ export function Chrome({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
+      if (mobileSheet !== null) {
+        closeMobileSheet();
+        e.stopPropagation();
+        return;
+      }
       const close: [boolean, () => void, string][] = [
         [ttsOpen, () => setTtsOpen(false), 'Text to speech'],
         [bookmarksOpen, () => setBookmarksOpen(false), 'Bookmarks'],
@@ -176,15 +266,43 @@ export function Chrome({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [ttsOpen, bookmarksOpen, highlightsOpen, searchOpen, settingsOpen, onToggleSettings]);
+  }, [ttsOpen, bookmarksOpen, highlightsOpen, searchOpen, settingsOpen, onToggleSettings, mobileSheet, closeMobileSheet]);
+
+  // Mobile ergonomic tap-to-toggle overlay handler
+  useEffect(() => {
+    const onWindowClick = (e: MouseEvent) => {
+      if (window.innerWidth > 768) return;
+      if (overlayOpen || mobileSheet !== null) return;
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      if (
+        target.closest(
+          'button, a, input, select, textarea, [data-pore-chrome-handle], .mobile-header, .mobile-bottom-bar, .mobile-sheet, .highlights-panel, .search, .selection-toolbar, .toast, .notice, .endpage, .pore-select-content'
+        )
+      ) {
+        return;
+      }
+      const sel = window.getSelection()?.toString().trim();
+      if (sel && sel.length > 0) return;
+
+      const r = e.clientX / window.innerWidth;
+      if (r >= 0.33 && r <= 0.67) {
+        setMobileChromeVisible((v) => !v);
+      }
+    };
+
+    window.addEventListener('click', onWindowClick);
+    return () => window.removeEventListener('click', onWindowClick);
+  }, [overlayOpen, mobileSheet]);
+
   // Auto-hide when the user chose it, or always in fullscreen. Panels pin it open.
   const isAuto = menu.behaviour === 'auto-hide';
   const autoHiding = (isFullscreen || isAuto) && !overlayOpen;
   const [autoHidden, pinChrome, hideChrome] = useAutoHide(2600, autoHiding);
 
   useEffect(() => {
-    if (overlayOpen) pinChrome();
-  }, [overlayOpen, pinChrome]);
+    if (overlayOpen || mobileSheet !== null) pinChrome();
+  }, [overlayOpen, mobileSheet, pinChrome]);
 
   // Sync reader chrome-toggle with auto-hide
   useEffect(() => {
@@ -196,6 +314,8 @@ export function Chrome({
   }, [chromeVisible, pinChrome, hideChrome]);
 
   const barHidden = autoHiding && autoHidden;
+  const mobileBarHidden = (!mobileChromeVisible || barHidden) && mobileSheet === null && !overlayOpen;
+  const currentBookLabel = books.find((b) => b.id === bookId)?.label || (droppedName ?? 'Book');
 
 
   const collapsed = menu.collapsed && !settingsOpen;
@@ -484,6 +604,214 @@ export function Chrome({
 
   return (
     <>
+      {/* Mobile Top Header */}
+      <header
+        className={`mobile-header${mobileBarHidden ? ' mobile-header--hidden' : ''}`}
+        role="banner"
+      >
+        <button
+          className="mobile-header__btn"
+          onClick={onHome}
+          aria-label="Back to start"
+          title="Back to start"
+        >
+          <ArrowLeft size={18} />
+        </button>
+
+        <div className="mobile-header__title-wrap">
+          <span className="mobile-header__book-title">{currentBookLabel}</span>
+          {progress && progress.chapterCount > 1 && (
+            <span className="mobile-header__chapter-badge">
+              Ch {progress.chapterIndex + 1}/{progress.chapterCount}
+            </span>
+          )}
+        </div>
+
+        <div className="mobile-header__actions">
+          {canSearch && (
+            <button
+              className={`mobile-header__btn${searchOpen ? ' active' : ''}`}
+              onClick={() => setSearchOpen((v) => !v)}
+              aria-label="Search in book"
+              title="Search"
+            >
+              <Search size={18} />
+            </button>
+          )}
+          <button
+            className="mobile-header__btn"
+            onClick={toggleTheme}
+            aria-label="Toggle theme"
+            title="Toggle theme"
+          >
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+        </div>
+      </header>
+
+      {/* Mobile Ergonomic Tap Zones */}
+      <div className="mobile-tap-zones" aria-hidden="true">
+        <div className="mobile-tap-zone mobile-tap-zone--left" />
+        <div className="mobile-tap-zone mobile-tap-zone--center" />
+        <div className="mobile-tap-zone mobile-tap-zone--right" />
+      </div>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <nav
+        className={`mobile-bottom-bar${mobileBarHidden ? ' mobile-bottom-bar--hidden' : ''}`}
+        role="navigation"
+        aria-label="Mobile reader controls"
+      >
+        <button
+          className="mobile-btn"
+          onClick={onHome}
+          aria-label="Back to start"
+          title="Back to start"
+        >
+          <Home size={19} />
+          <span className="mobile-btn__label">Home</span>
+        </button>
+
+        <button
+          className={`mobile-btn${mobileSheet === 'toc' ? ' active' : ''}`}
+          onClick={() => {
+            if (mobileSheet === 'toc') closeMobileSheet();
+            else {
+              if (settingsOpen) onToggleSettings();
+              setMobileSheet('toc');
+            }
+          }}
+          aria-label="Table of contents"
+          title="Table of contents"
+        >
+          <BookOpen size={19} />
+          <span className="mobile-btn__label">TOC</span>
+        </button>
+
+        {/* Chapter & Page position indicator */}
+        <button
+          className={`mobile-pos-indicator${scrubberOpen ? ' active' : ''}`}
+          onClick={() => setScrubberOpen((v) => !v)}
+          aria-label="Toggle scrubber"
+          title="Toggle quick scrubber"
+        >
+          <span className="mobile-pos-indicator__main">{loc?.label ?? '…'}</span>
+          {progress && (
+            <span className="mobile-pos-indicator__sub">
+              {progress.chapterCount > 1
+                ? `Ch ${progress.chapterIndex + 1}/${progress.chapterCount}`
+                : `${Math.round(progressPercent)}%`}
+            </span>
+          )}
+        </button>
+
+        {/* Quick Scrubber trigger */}
+        <button
+          className={`mobile-btn${scrubberOpen ? ' active' : ''}`}
+          onClick={() => setScrubberOpen((v) => !v)}
+          aria-label="Quick scrubber"
+          title="Quick scrubber"
+        >
+          <SlidersHorizontal size={19} />
+          <span className="mobile-btn__label">Scrub</span>
+        </button>
+
+        {/* Bookmark trigger */}
+        {bm.supported && (
+          <button
+            className={`mobile-btn${bm.isBookmarkedHere ? ' active' : ''}`}
+            onClick={() => bm.toggle()}
+            aria-label={bm.isBookmarkedHere ? 'Remove bookmark' : 'Bookmark this page'}
+            title="Bookmark"
+          >
+            {bm.isBookmarkedHere ? <BookmarkCheck size={19} /> : <Bookmark size={19} />}
+            <span className="mobile-btn__label">Bookmark</span>
+          </button>
+        )}
+
+        {/* Settings button */}
+        <button
+          className={`mobile-btn${mobileSheet === 'settings' || settingsOpen ? ' active' : ''}`}
+          onClick={() => {
+            if (mobileSheet === 'settings') {
+              closeMobileSheet();
+            } else {
+              if (!settingsOpen) onToggleSettings();
+              setMobileSheet('settings');
+            }
+          }}
+          aria-label="Reader settings"
+          title="Reader settings"
+        >
+          <Settings size={19} />
+          <span className="mobile-btn__label">Settings</span>
+        </button>
+      </nav>
+
+      {/* Mobile Bottom Sheet Drawer for Settings & TOC */}
+      {mobileSheet !== null && (
+        <>
+          <div
+            className="mobile-sheet-backdrop"
+            onClick={closeMobileSheet}
+            aria-hidden="true"
+          />
+          <div
+            className="mobile-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label={mobileSheet === 'toc' ? 'Table of Contents' : 'Reader Settings'}
+          >
+            <div className="mobile-sheet__handle-bar" onClick={closeMobileSheet}>
+              <div className="mobile-sheet__drag-handle" />
+            </div>
+
+            <div className="mobile-sheet__header">
+              <h2 className="mobile-sheet__title">
+                {mobileSheet === 'toc' ? 'Table of Contents' : 'Settings'}
+              </h2>
+              <button
+                className="mobile-sheet__close"
+                onClick={closeMobileSheet}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mobile-sheet__body">
+              {mobileSheet === 'toc' ? (
+                <MobileTocList
+                  onSelect={(href) => {
+                    reader.goToHref(href);
+                    closeMobileSheet();
+                  }}
+                />
+              ) : (
+                <div className="mobile-sheet__settings">
+                  <SettingsPanelBody
+                    layout="accordion"
+                    extraTabs={[
+                      {
+                        id: 'menubar',
+                        label: 'Menu bar',
+                        content: (
+                          <MenuBarSettings
+                            menu={menu}
+                            animate={animate}
+                            onToggleAnimate={onToggleAnimate}
+                          />
+                        ),
+                      },
+                    ]}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
       <header
         className={`bar bar--${menuPos}${barHidden ? ' bar--hidden' : ''}${
           collapsed ? ' bar--collapsed' : ''
@@ -533,7 +861,9 @@ export function Chrome({
       {/* Interactive scrubber dock in normal mode */}
       {progressStyle === 'normal' && (
         <div
-          className={`scrubber-dock${barHidden ? ' scrubber-dock--hidden' : ''}`}
+          className={`scrubber-dock${barHidden && !scrubberOpen ? ' scrubber-dock--hidden' : ''}${
+            scrubberOpen ? ' scrubber-dock--mobile-active' : ''
+          }`}
           onPointerEnter={pinChrome}
         >
           <ReaderScrubber dir={isRtl ? 'rtl' : 'ltr'} />
