@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="100%" height="100%">
+  <defs>
+    <linearGradient id="plateGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#242119" />
+      <stop offset="100%" stop-color="#14120e" />
+    </linearGradient>
+    <linearGradient id="leftPage" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#ede6d8" />
+    </linearGradient>
+    <linearGradient id="rightPage" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f5efe6" />
+      <stop offset="100%" stop-color="#dfd6c5" />
+    </linearGradient>
+    <linearGradient id="amberGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <filter id="softShadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000000" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <!-- Base rounded plate -->
+  <rect x="12" y="12" width="232" height="232" rx="52" fill="url(#plateGrad)" stroke="#383327" stroke-width="2.5" filter="url(#softShadow)" />
+
+  <!-- Stylized Open Book Folio -->
+  <!-- Left Page -->
+  <path d="M128 184 C100 178 64 186 46 194 C42 196 38 193 38 188 L38 78 C38 74 42 71 46 69 C68 60 102 54 128 66 Z" 
+        fill="url(#leftPage)" />
+  
+  <!-- Right Page -->
+  <path d="M128 184 C156 178 192 186 210 194 C214 196 218 193 218 188 L218 78 C218 74 214 71 210 69 C188 60 154 54 128 66 Z" 
+        fill="url(#rightPage)" />
+
+  <!-- Center Spine Seam -->
+  <path d="M128 66 L128 184" stroke="#8a7f6c" stroke-width="3" stroke-linecap="round" />
+
+  <!-- Central Reading Aperture / Pore Focus Ring -->
+  <circle cx="128" cy="124" r="26" fill="#1c1a14" stroke="url(#amberGlow)" stroke-width="4" />
+  <circle cx="128" cy="124" r="12" fill="url(#amberGlow)" />
+
+  <!-- Minimalist reading lines on pages -->
+  <line x1="62" y1="98" x2="104" y2="94" stroke="#a39a89" stroke-width="2.5" stroke-linecap="round" opacity="0.6" />
+  <line x1="62" y1="120" x2="100" y2="117" stroke="#a39a89" stroke-width="2.5" stroke-linecap="round" opacity="0.6" />
+  <line x1="62" y1="142" x2="106" y2="140" stroke="#a39a89" stroke-width="2.5" stroke-linecap="round" opacity="0.6" />
+
+  <line x1="152" y1="94" x2="194" y2="98" stroke="#a39a89" stroke-width="2.5" stroke-linecap="round" opacity="0.6" />
+  <line x1="156" y1="117" x2="194" y2="120" stroke="#a39a89" stroke-width="2.5" stroke-linecap="round" opacity="0.6" />
+  <line x1="150" y1="140" x2="194" y2="142" stroke="#a39a89" stroke-width="2.5" stroke-linecap="round" opacity="0.6" />
+</svg>

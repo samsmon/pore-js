@@ -1,12 +1,15 @@
 <div align="center">
 
+<img src="assets/logo.svg" alt="Pore.js Logo" width="88" height="88" />
+
 # Pore.js
 
-### Source-Agnostic Web Reader Engine for Manga & Digital Text
+### Source-Agnostic Web Reader Engine for Manga, Books & Digital Text
 
-A high-performance, source-agnostic web reader engine for manga, EPUB, PDF, and CBZ. Framework-agnostic core (`porejs`) + React 19 headless primitives (`porejs-react`) with custom pagination, zero shipped CSS, and offline caching.
+A high-performance, source-agnostic web reader engine for manga, EPUB, PDF, and CBZ. Framework-agnostic core (`porejs`) + React 19 headless primitives (`porejs-react`) with zero-flicker pagination, mobile bottom sheets, zero shipped CSS, and offline caching.
 
-[![CI Status](https://img.shields.io/github/actions/workflow/status/srytmj/pore-js/ci.yml?branch=main&style=flat-square)](https://github.com/srytmj/pore-js/actions/workflows/ci.yml)
+[![CI Status](https://img.shields.io/github/actions/workflow/status/samsmon/pore-js/ci.yml?branch=main&style=flat-square)](https://github.com/samsmon/pore-js/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/samsmon/pore-js?style=flat-square&color=orange)](https://github.com/samsmon/pore-js/releases)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=flat-square&logo=typescript&logoColor=white)](#tech-stack--workspace-matrix)
 [![React 19](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)](#tech-stack--workspace-matrix)
 [![pnpm Workspace](https://img.shields.io/badge/pnpm-workspace-orange?style=flat-square&logo=pnpm&logoColor=white)](#workspace-layout)
@@ -22,7 +25,7 @@ A high-performance, source-agnostic web reader engine for manga, EPUB, PDF, and 
 > Built for developers building digital libraries: a complete, headless reader engine that decouples content sources from rendering — you supply the data stream, Pore.js handles the canvas, viewport virtualization, text layout, and gesture physics.
 
 > [!NOTE]
-> **Pre-release Dogfooding Status (M8 / v1.0.0-rc.1):** npm registry publishing is currently postponed while the engine is dogfooded in production homelab environments. Consume the packages locally via `pnpm pack:local` or workspace links per [`docs/releasing.md`](docs/releasing.md#consuming-it-locally).
+> **Release Status (v1.0.0-rc.2):** Latest release features dedicated mobile reader layout (bottom bar & bottom sheet drawers), zero-flicker instant manga page turns (atomic DOM swap + sync cache lookup), DOMPurify footnote security hardening, isolated multi-context state architecture, and granular subpath package exports.
 
 ---
 
@@ -37,9 +40,9 @@ flowchart TD
     end
 
     subgraph Core[" Engine Core (porejs) "]
-        ImgEng["ImageEngine<br/>(Manga, CBZ, Webtoon)"]
-        TxtEng["TextEngine<br/>(EPUB Reflow, CSS Multicol)"]
-        PdfEng["PdfEngine<br/>(pdfjs-dist Canvas Pipeline)"]
+        ImgEng["ImageEngine<br/>(Zero-Flicker Manga, CBZ, Webtoon)"]
+        TxtEng["TextEngine<br/>(EPUB Reflow, Sanitized Footnotes)"]
+        PdfEng["PdfEngine<br/>(pdfjs-dist Canvas & Memory Cleanup)"]
     end
 
     subgraph Sandbox[" Reading Frame Sandbox "]
@@ -48,9 +51,9 @@ flowchart TD
     end
 
     subgraph ReactBindings[" Headless React 19 Bindings (porejs-react) "]
-        Provider["&lt;ReaderProvider&gt;<br/>State Management & Context"]
-        ReaderComp["&lt;Reader&gt; Surface<br/>Viewport Virtualizer & Gesture Physics"]
-        HeadlessUI["Headless Primitives & Hooks<br/>&lt;SettingsPanel&gt; · &lt;TableOfContents&gt;<br/>useReaderProgress · useReaderSearch · useTts"]
+        MicroCtx["Partitioned Micro-Contexts<br/>(Position · Config · UI · Annotations)"]
+        ReaderComp["&lt;Reader&gt; Surface<br/>Auto-Fit Scaling & Gesture Physics"]
+        MobileUI["Headless Controls & Mobile Drawers<br/>Bottom Navigation Bar · Bottom Sheet Drawer<br/>&lt;SettingsPanel&gt; · &lt;TableOfContents&gt; · useReaderProgress"]
     end
 
     subgraph HostApp[" Host Application UI & Styling "]
@@ -68,8 +71,8 @@ flowchart TD
 The engine enforces strict architectural separation across four distinct boundaries:
 1. **Source Decoupling**: Data streams are ingested via abstract `ReaderSource` adapters (local files, OPDS, or remote servers) wrapped in a transparent caching layer.
 2. **Framework-Agnostic Core**: Canvas rendering, pagination calculations, EPUB spine parsing, and locator offsets operate independently of any UI framework.
-3. **Sandbox Isolation**: EPUB documents and untrusted markup execute inside a sandboxed iframe with strict Content Security Policy (`script-src 'none'`) preventing script execution.
-4. **Headless Presentation**: React 19 bindings emit zero bundled styles, allowing the host application full layout control through semantic `data-pore-*` attributes.
+3. **Sandbox Isolation**: EPUB documents and untrusted markup execute inside a sandboxed iframe with strict Content Security Policy (`script-src 'none'`) and DOMPurify footnote sanitization.
+4. **Headless Presentation**: React 19 bindings emit zero bundled styles and partition state into 4 micro-contexts, preventing cascading re-renders across the component tree.
 
 ---
 
@@ -81,21 +84,24 @@ The engine enforces strict architectural separation across four distinct boundar
       <h4>Multi-Engine Rendering &amp; Layout</h4>
       <ul>
         <li><strong>Multi-Format Support</strong>: Unified reader engine handling image manga (CBZ/ZIP), EPUB text reflow, and PDF document rendering.</li>
+        <li><strong>Zero-Flicker Manga Turns</strong>: Synchronous prefetch cache lookup + atomic DOM replacement eliminating blank flashes between page flips.</li>
+        <li><strong>Auto-Fit Image Scaling</strong>: Smooth cubic-bezier transitions when toggling sidebars or expanding panels without layout jumps.</li>
         <li><strong>Advanced Manga Layouts</strong>: Seamless single-page, double-page spread pairing (with spread offset), and continuous vertical/horizontal scroll.</li>
-        <li><strong>Flow Directions</strong>: Right-to-Left (manga) and Left-to-Right (western comics/books) with matching gestures and keyboard maps.</li>
+        <li><strong>Flow Directions</strong>: Right-to-Left (manga) and Left-to-Right (western comics/books) with logical RTL scrubber tick positioning.</li>
         <li><strong>EPUB Reflow &amp; Pagination</strong>: CSS multi-column pagination running inside a sandboxed iframe (<code>script-src 'none'</code>).</li>
-        <li><strong>PDF Rendering Pipeline</strong>: Offscreen canvas rendering via <code>pdfjs-dist</code> with hierarchical outline extraction and search.</li>
+        <li><strong>PDF Rendering Pipeline</strong>: Offscreen canvas rendering via <code>pdfjs-dist</code> with explicit <code>page.cleanup()</code> memory release.</li>
       </ul>
     </td>
     <td width="50%" valign="top">
-      <h4>Headless Architecture &amp; Integration</h4>
+      <h4>Headless Architecture &amp; Mobile UX</h4>
       <ul>
-        <li><strong>Zero Shipped CSS</strong>: Styled entirely via semantic <code>data-pore-*</code> markup and unstyled headless components.</li>
-        <li><strong>Framework-Agnostic Core</strong>: Can be consumed directly without React using <code>createImageEngine</code>, <code>createTextEngine</code>, or <code>createPdfEngine</code>.</li>
+        <li><strong>Dedicated Mobile Layout</strong>: Compact top header, floating bottom navigation bar, ergonomic bottom sheet drawers for TOC/Settings, and safe-area insets.</li>
+        <li><strong>Granular Subpath Exports</strong>: Direct imports (<code>porejs-react/reader</code>, <code>primitives</code>, <code>gsap</code>) for tree-shakeable integration without Radix bloat.</li>
+        <li><strong>Zero Cascading Re-Renders</strong>: State partitioned into <code>PositionContext</code>, <code>ConfigContext</code>, <code>UIContext</code>, and <code>AnnotationsContext</code>.</li>
+        <li><strong>Security Hardening</strong>: DOMPurify footnote sanitization against Stored XSS and runtime schema validation for imported annotation bundles.</li>
         <li><strong>Offline Cache &amp; Resume</strong>: <code>CachedSource</code> v2 backed by IndexedDB and Cache API with byte-budgeted chapter preloading.</li>
         <li><strong>Text-to-Speech (TTS)</strong>: Sentence-level highlight synchronization and automatic page-turn via browser <code>SpeechSynthesis</code>.</li>
         <li><strong>Annotation Engine</strong>: CSS Custom Highlight API text highlights, notes, and portable <code>epubcfi</code> locators across devices.</li>
-        <li><strong>Cross-Browser Fidelity</strong>: Automated Playwright test suite continuously validated across Chromium, Firefox, and WebKit (Safari).</li>
       </ul>
     </td>
   </tr>
@@ -110,8 +116,8 @@ Pore.js is maintained as a pnpm monorepo cleanly isolating core algorithms from 
 | Package | Directory | Role & Responsibility |
 |---|---|---|
 | `porejs` | `packages/reader-core` | Framework-agnostic reader core: sources, image/text/PDF engines, locator model, worker search |
-| `porejs-react` | `packages/reader-react` | React 19 headless primitives: `<Reader>`, context providers, custom hooks, and UI controls |
-| `@pore/demo` | `apps/demo` | Public demo application showcasing editorial reading UI, dark mode, and synthetic fixtures |
+| `porejs-react` | `packages/reader-react` | React 19 headless primitives: `<Reader>`, micro-contexts, custom hooks, and UI controls |
+| `@pore/demo` | `apps/demo` | Public demo application showcasing mobile layout, dark mode, and synthetic fixtures |
 | `@pore/example-host-app` | `examples/host-app` | Minimal third-party embedding reference illustrating host integration |
 
 ---
@@ -121,7 +127,7 @@ Pore.js is maintained as a pnpm monorepo cleanly isolating core algorithms from 
 | Layer | Technology | Purpose |
 |---|---|---|
 | **Core Engine** | TypeScript 5.7+ | Strict type safety, engine algorithms, zero-dependency core architecture |
-| **UI Bindings** | React 19 | Headless components, compound state context, declarative reactive hooks |
+| **UI Bindings** | React 19 | Headless components, compound micro-contexts, declarative reactive hooks |
 | **Text & PDF** | CSS Multi-Column / `pdfjs-dist` | Sandboxed EPUB reflow and canvas-based document rendering |
 | **Offline Storage** | IndexedDB + Cache API | Resilient progress checkpoints, blob storage, and offline media cache |
 | **Tooling & Test** | Vite 6 / tsup / Vitest / Playwright | Monorepo bundling, unit tests, and cross-browser e2e verification |
@@ -164,10 +170,11 @@ pnpm --filter @pore/demo e2e           # Run e2e test suite across browsers
 
 ### 1. Basic React Integration
 
-Install the packages in your project and mount `<Reader>` inside a `ReaderProvider`. Pore.js manages virtualization, continuous scrolling, and touch gestures:
+Install the packages in your project and mount `<Reader>` inside a `ReaderProvider`. You can import the full bundle or use granular subpath exports:
 
 ```tsx
-import { ReaderProvider, Reader } from 'porejs-react';
+import { ReaderProvider } from 'porejs-react';
+import { Reader } from 'porejs-react/reader';
 import { CachedSource, DemoSource } from 'porejs';
 
 // Initialize data source (wrap in CachedSource for offline caching & resume)
@@ -190,8 +197,8 @@ export function ReaderView() {
 The `porejs-react` package exports unstyled headless components and hooks for building custom reader chrome:
 
 - **Components**: `<SettingsPanel>`, `<TableOfContents>`, `<HighlightsPanel>`, `<ReaderScrubber>`, `<FootnotePopover>`, `<ReaderAnnouncer>`.
-- **Hooks**: `useReaderProgress()`, `useReaderSearch()`, `useDownload()`, `useTts()`, `useReaderHistory()`, `useBookmarks()`.
-- **Styling**: Target semantic attributes such as `[data-pore-layout]`, `[data-pore-flow]`, and `[data-pore-theme]` in your host stylesheet.
+- **Hooks**: `useReaderProgress()`, `useReaderLocation()`, `useReaderSettings()`, `useReaderSearch()`, `useDownload()`, `useTts()`, `useBookmarks()`.
+- **Subpaths**: `porejs-react/reader` (minimal headless reader), `porejs-react/primitives` (UI building blocks), `porejs-react/gsap` (animation adapter).
 
 ### 3. Custom Sources
 
@@ -221,31 +228,6 @@ export class CustomLibrarySource implements ReaderSource {
   }
 }
 ```
-
----
-
-## Browser Compatibility
-
-The automated Playwright end-to-end test suite continuously validates rendering fidelity across all major engines:
-
-| Feature / Engine | Chromium (Chrome, Edge) | Gecko (Firefox) | WebKit (Safari macOS/iOS) |
-|---|---|---|---|
-| **Image & Manga Engine** | ✅ Full Support | ✅ Full Support | ✅ Full Support |
-| **EPUB Reflow (`TextEngine`)** | ✅ Full Support | ✅ Full Support | ✅ Full Support (`allow-scripts` + strict CSP) |
-| **PDF Canvas Engine** | ✅ Full Support | ✅ Full Support | ✅ Canvas Fallback (where `OffscreenCanvas` absent) |
-| **Highlights & Annotations** | ✅ Custom Highlight API | ✅ Custom Highlight API | ✅ Custom Highlight API |
-| **Text-to-Speech (TTS)** | ✅ Native SpeechSynthesis | ✅ Native SpeechSynthesis | ✅ OS Voice Synthesis |
-
----
-
-## Troubleshooting & Developer Notes
-
-| Scenario | Probable Cause | Immediate Remediation |
-|---|---|---|
-| **Safari CSP Event Dropping** | Sandboxed iframes without `allow-scripts` drop user pointer events | Safari requires `allow-scripts` on iframe sandbox attribute; execution safety is enforced by strict `script-src 'none'` CSP header. |
-| **WebGL & Memory Fallbacks** | GPU context exhaustion on large double-spread image buffers | `ImageEngine` automatically drops down to standard 2D canvas context and evicts inactive offscreen tiles outside viewport ring buffer. |
-| **Canvas Fallback in PDF** | Some Safari / WebKit versions lack full `OffscreenCanvas` worker support | `PdfImageSource` automatically falls back to synchronous main-thread HTML5 2D canvas rendering without UI interruption. |
-| **Local Package Dogfooding** | Packages are not published to npm registry during M8 stabilization | Run `pnpm pack:local` to generate local `.tgz` tarballs, or link directly using `pnpm link` (see [`docs/releasing.md`](docs/releasing.md)). |
 
 ---
 

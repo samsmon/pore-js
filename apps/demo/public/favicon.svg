@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="favPlate" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#242119" />
+      <stop offset="100%" stop-color="#12110d" />
+    </linearGradient>
+    <linearGradient id="favAmber" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#favPlate)" stroke="#383327" stroke-width="1.5" />
+  <!-- Left Leaf -->
+  <path d="M32 46 C25 44 16 46 11 48 C10 48.5 9 47.8 9 46.5 L9 19 C9 18 10 17.2 11 16.8 C17 14.5 25 13 32 16 Z" fill="#faf7f1" />
+  <!-- Right Leaf -->
+  <path d="M32 46 C39 44 48 46 53 48 C54 48.5 55 47.8 55 46.5 L55 19 C55 18 54 17.2 53 16.8 C47 14.5 39 13 32 16 Z" fill="#ede6d8" />
+  <!-- Center seam -->
+  <line x1="32" y1="16" x2="32" y2="46" stroke="#8a7f6c" stroke-width="1.5" stroke-linecap="round" />
+  <!-- Aperture / Pore dot -->
+  <circle cx="32" cy="31" r="7" fill="#17150f" stroke="url(#favAmber)" stroke-width="1.8" />
+  <circle cx="32" cy="31" r="3.5" fill="url(#favAmber)" />
+</svg>
