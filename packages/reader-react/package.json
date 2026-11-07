@@ -1,6 +1,6 @@
 {
   "name": "porejs-react",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0-rc.2",
   "description": "React 19 bindings for porejs: headless <Reader> + hooks",
   "license": "MIT",
   "author": "Surya",
@@ -17,11 +17,11 @@
     "ereader",
     "porejs"
   ],
-  "homepage": "https://github.com/srytmj/pore-js#readme",
-  "bugs": "https://github.com/srytmj/pore-js/issues",
+  "homepage": "https://github.com/samsmon/pore-js#readme",
+  "bugs": "https://github.com/samsmon/pore-js/issues",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/srytmj/pore-js.git",
+    "url": "git+https://github.com/samsmon/pore-js.git",
     "directory": "packages/reader-react"
   },
   "publishConfig": {
