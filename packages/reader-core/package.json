@@ -1,6 +1,6 @@
 {
   "name": "porejs",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0-rc.2",
   "description": "Framework-agnostic web reader engine for manga, comics and books (EPUB, PDF, CBZ): sources, image engine, text engine, position model",
   "license": "MIT",
   "author": "Surya",
@@ -18,11 +18,11 @@
     "epubcfi",
     "ereader"
   ],
-  "homepage": "https://github.com/srytmj/pore-js#readme",
-  "bugs": "https://github.com/srytmj/pore-js/issues",
+  "homepage": "https://github.com/samsmon/pore-js#readme",
+  "bugs": "https://github.com/samsmon/pore-js/issues",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/srytmj/pore-js.git",
+    "url": "git+https://github.com/samsmon/pore-js.git",
     "directory": "packages/reader-core"
   },
   "publishConfig": {

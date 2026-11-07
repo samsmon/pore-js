@@ -7,10 +7,10 @@
   "author": "Surya",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/srytmj/pore-js.git"
+    "url": "git+https://github.com/samsmon/pore-js.git"
   },
-  "homepage": "https://github.com/srytmj/pore-js#readme",
-  "bugs": "https://github.com/srytmj/pore-js/issues",
+  "homepage": "https://github.com/samsmon/pore-js#readme",
+  "bugs": "https://github.com/samsmon/pore-js/issues",
   "type": "module",
   "packageManager": "pnpm@9.15.0",
   "engines": {
