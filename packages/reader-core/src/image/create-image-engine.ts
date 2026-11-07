@@ -28,9 +28,11 @@ import {
   type ContinuousAxis,
   type LinearLayout,
 } from './continuous.js';
-import { clampZoom, resolveTap, swipeTurn, zoneForPoint } from './input.js';
+import { resolveTap, swipeTurn, zoneForPoint } from './input.js';
 import { PageLoader } from './page-loader.js';
 import { PrefetchScheduler } from './prefetch.js';
+import { ImageZoomController } from './image-zoom.js';
+import { ImageAutoNavCoordinator } from './image-autonav.js';
 
 const FIT_CYCLE: ImageEngineSettings['fit'][] = ['contain', 'width', 'height', 'original', 'smart'];
 const OVERSCAN_PX = 1200;
@@ -80,20 +82,9 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
   const mountedImgs = new Map<number, HTMLImageElement>();
   // input state
   let chromeVisible = settings.headerVisible;
-  let zoom = 1;
-  let panX = 0;
-  let panY = 0;
   let pointer: { x: number; y: number; t: number; id: number } | null = null;
   let wakeLock: WakeLockSentinel | null = null;
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
-  // auto-advance state
-  let autoOn = false;
-  let autoRaf = 0;
-  let autoLastT = 0;
-  let autoStepTimer: ReturnType<typeof setInterval> | null = null;
-  let autoPagedTimer: ReturnType<typeof setInterval> | null = null;
-  let autoResumeTimer: ReturnType<typeof setTimeout> | null = null;
-  let advanceTimer: ReturnType<typeof setTimeout> | null = null;
 
   const prefersReducedMotion = () =>
     typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -140,6 +131,31 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
   dimEl.style.cssText =
     'position:absolute;inset:0;pointer-events:none;background:#000;opacity:0;transition:opacity .2s;z-index:1;';
   root.appendChild(dimEl);
+
+  const zoomController = new ImageZoomController({
+    viewport,
+    isContinuous: () => isContinuous(),
+    prefersReducedMotion: () => prefersReducedMotion(),
+    transitions,
+    onZoomChange: (scale) => emitter.emit('reader:zoomchange', { scale }),
+  });
+
+  const autonav = new ImageAutoNavCoordinator({
+    isContinuous: () => isContinuous(),
+    prefersReducedMotion: () => prefersReducedMotion(),
+    getSettings: () => settings,
+    getManifest: () => manifest,
+    getCurrentPage: () => currentPage(),
+    scrollMain: () => scrollMain(),
+    setScrollMain: (v) => setScrollMain(v),
+    viewportMain: () => viewportMain(),
+    turn: (dir) => turn(dir),
+    goto: (target) => goto(target),
+    onScroll: () => onScroll(),
+    emitAutoscroll: (running) => emitter.emit('reader:autoscroll', { running }),
+    emitAutoAdvance: (payload) => emitter.emit('reader:autoadvance', payload),
+    emitEnd: (payload) => emitter.emit('reader:end', payload),
+  });
 
   // ---- shared helpers -------------------------------------------------------
 
@@ -604,126 +620,15 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
     }
   };
 
-  const applyZoom = () => {
-    if (isContinuous()) return;
-    const value =
-      zoom === 1 && panX === 0 && panY === 0
-        ? ''
-        : `translate(${panX}px, ${panY}px) scale(${zoom})`;
-    transitions.zoom(viewport, value, prefersReducedMotion());
-  };
+  const applyZoom = () => zoomController.apply();
 
-  const setZoom = (next: number, originX = 0.5, originY = 0.5) => {
-    const clamped = clampZoom(next);
-    if (clamped === zoom) return;
-    zoom = clamped;
-    if (zoom === 1) {
-      panX = 0;
-      panY = 0;
-    } else {
-      viewport.style.transformOrigin = `${originX * 100}% ${originY * 100}%`;
-    }
-    applyZoom();
-    emitter.emit('reader:zoomchange', { scale: zoom });
-  };
-
-  // ---- auto-advance -------------------------------------------------------------
-
-  const autoStep = (t: number) => {
-    if (!autoOn || destroyed) return;
-    const dt = autoLastT ? (t - autoLastT) / 1000 : 0;
-    autoLastT = t;
-    const before = scrollMain();
-    setScrollMain(before + settings.autoscrollSpeed * dt);
-    if (scrollMain() === before) {
-      // hit the end
-      stopAutoscroll();
-      turn('forward');
-      return;
-    }
-    onScroll();
-    autoRaf = requestAnimationFrame(autoStep);
-  };
-
-  const startAutoscroll = () => {
-    if (autoOn || !isContinuous() || prefersReducedMotion()) return;
-    autoOn = true;
-    autoLastT = 0;
-    emitter.emit('reader:autoscroll', { running: true });
-    if (settings.autoscrollSmooth) {
-      autoRaf = requestAnimationFrame(autoStep);
-    } else {
-      const stepMs = (viewportMain() / Math.max(settings.autoscrollSpeed, 1)) * 1000;
-      autoStepTimer = setInterval(() => turn('forward'), stepMs);
-    }
-  };
-
-  const stopAutoscroll = (silent = false) => {
-    if (!autoOn) return;
-    autoOn = false;
-    if (autoRaf) cancelAnimationFrame(autoRaf);
-    autoRaf = 0;
-    if (autoStepTimer) clearInterval(autoStepTimer);
-    autoStepTimer = null;
-    if (!silent) emitter.emit('reader:autoscroll', { running: false });
-  };
-
-  const pauseAutoscroll = () => {
-    if (!autoOn) return;
-    stopAutoscroll(true);
-    if (autoResumeTimer) clearTimeout(autoResumeTimer);
-    autoResumeTimer = setTimeout(() => {
-      if (!destroyed && settings.autoscroll) startAutoscroll();
-    }, 2000);
-  };
-
-  const startPagedAutoAdvance = () => {
-    if (autoPagedTimer || settings.pagedAutoAdvanceSeconds <= 0 || isContinuous()) return;
-    autoPagedTimer = setInterval(() => turn('forward'), settings.pagedAutoAdvanceSeconds * 1000);
-  };
-
-  const chapterIndexOf = (page: number): number => {
-    const chs = manifest?.chapters;
-    if (!chs?.length) return 0;
-    let idx = 0;
-    for (let i = 0; i < chs.length; i++) if (chs[i]!.startIndex <= page) idx = i;
-    return idx;
-  };
-
-  const cancelAutoAdvance = () => {
-    if (advanceTimer) {
-      clearTimeout(advanceTimer);
-      advanceTimer = null;
-      emitter.emit('reader:autoadvance', { toChapter: null, inMs: -1 });
-    }
-  };
-
-  /** Arm a countdown to `targetChapter`; `instant`/0 s advances synchronously-ish. */
-  const armChapterAdvance = (target: { id: string; startIndex: number }) => {
-    if (settings.nextChapterAfterLastPage === 'off') {
-      goto(target.startIndex);
-      return;
-    }
-    const secs =
-      settings.nextChapterAfterLastPage === 'instant' ? 0 : settings.nextChapterAfterLastPage;
-    emitter.emit('reader:autoadvance', { toChapter: target.id, inMs: secs * 1000 });
-    advanceTimer = setTimeout(() => {
-      advanceTimer = null;
-      goto(target.startIndex);
-    }, secs * 1000);
-  };
-
-  /** If turning forward would enter a later chapter, intercept for the countdown. */
-  const interceptChapterBoundary = (nextPage: number): boolean => {
-    if (!manifest?.chapters?.length) return false;
-    const ci = chapterIndexOf(currentPage());
-    const ni = chapterIndexOf(nextPage);
-    if (ni <= ci) return false;
-    const target = manifest.chapters[ni]!;
-    emitter.emit('reader:end', { auto: settings.nextChapterAfterLastPage });
-    armChapterAdvance(target);
-    return true;
-  };
+  const startAutoscroll = () => autonav.startAutoscroll();
+  const stopAutoscroll = (silent = false) => autonav.stopAutoscroll(silent);
+  const pauseAutoscroll = () => autonav.pauseAutoscroll();
+  const startPagedAutoAdvance = () => autonav.startPagedAutoAdvance();
+  const cancelAutoAdvance = () => autonav.cancelAutoAdvance();
+  const interceptChapterBoundary = (nextPage: number) =>
+    autonav.interceptChapterBoundary(nextPage);
 
   const toggleChrome = () => {
     chromeVisible = !chromeVisible;
@@ -757,7 +662,7 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
     pauseAutoscroll();
     handle.wake();
     clearLongPress();
-    if (wantsLongPress() && zoom === 1 && ev.pointerType !== 'mouse') {
+    if (wantsLongPress() && zoomController.zoom === 1 && ev.pointerType !== 'mouse') {
       longPressTimer = setTimeout(() => {
         longPressTimer = null;
         pointer = null; // consume — pointerup won't also turn
@@ -774,11 +679,9 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
   const onPointerMove = (ev: PointerEvent) => {
     if (!pointer || ev.pointerId !== pointer.id) return;
     if (Math.hypot(ev.clientX - pointer.x, ev.clientY - pointer.y) > TAP_SLOP) clearLongPress();
-    if (zoom === 1) return;
-    panX += ev.clientX - pointer.x;
-    panY += ev.clientY - pointer.y;
+    if (zoomController.zoom === 1) return;
+    zoomController.panBy(ev.clientX - pointer.x, ev.clientY - pointer.y);
     pointer = { ...pointer, x: ev.clientX, y: ev.clientY };
-    applyZoom();
   };
 
   const onPointerUp = (ev: PointerEvent) => {
@@ -794,7 +697,7 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
     const dt = Date.now() - pointer.t;
     pointer = null;
     const isTouch = ev.pointerType !== 'mouse';
-    if (zoom > 1) {
+    if (zoomController.zoom > 1) {
       // when zoomed, a quick near-stationary tap can still be a double-tap to reset
       const now = Date.now();
       if (
@@ -808,7 +711,7 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
       ) {
         lastTap = { t: 0, x: 0, y: 0 };
         touchDblTapAt = now;
-        setZoom(1);
+        zoomController.setZoom(1);
         return;
       }
       if (Math.hypot(dx, dy) <= TAP_SLOP && dt <= TAP_MS) {
@@ -832,7 +735,7 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
         lastTap = { t: 0, x: 0, y: 0 };
         touchDblTapAt = now;
         const rect = root.getBoundingClientRect();
-        setZoom(zoom > 1 ? 1 : 2, (ev.clientX - rect.left) / rect.width, (ev.clientY - rect.top) / rect.height);
+        zoomController.handleDoubleTap(ev.clientX, ev.clientY, rect);
         return;
       }
       lastTap = { t: now, x: ev.clientX, y: ev.clientY };
@@ -857,16 +760,8 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
   };
 
   const onWheel = (ev: WheelEvent) => {
-    if (ev.ctrlKey) {
-      ev.preventDefault();
-      const rect = root.getBoundingClientRect();
-      setZoom(
-        zoom * (ev.deltaY < 0 ? 1.1 : 0.9),
-        (ev.clientX - rect.left) / rect.width,
-        (ev.clientY - rect.top) / rect.height,
-      );
-      return;
-    }
+    const rect = root.getBoundingClientRect();
+    if (zoomController.handleWheel(ev, rect)) return;
     if (isContinuous()) return;
     const mode = settings.scrollToTurn;
     if (mode === 'wheel' || mode === 'both') {
@@ -878,7 +773,7 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
   const onDblClick = () => {
     if (Date.now() - touchDblTapAt < 500) return; // handled by the touch double-tap
     if (settings.doubleClickFullscreen) void toggleFullscreen();
-    else setZoom(zoom > 1 ? 1 : 2);
+    else zoomController.toggleZoom();
   };
 
   async function toggleFullscreen(): Promise<void> {
@@ -915,8 +810,8 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
       if (dir === 'back' && atStart) return emitter.emit('reader:start', {});
       if (dir === 'forward' && atEnd) {
         emitter.emit('reader:end', { auto: settings.nextChapterAfterLastPage });
-        const nextCh = manifest.chapters?.[chapterIndexOf(currentPage()) + 1];
-        if (nextCh) armChapterAdvance(nextCh);
+        const nextCh = manifest.chapters?.[autonav.chapterIndexOf(currentPage()) + 1];
+        if (nextCh) autonav.armChapterAdvance(nextCh);
         return;
       }
       transitions.cancel();
@@ -966,9 +861,7 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
       measured.clear();
       mountedImgs.clear();
       viewport.replaceChildren();
-      zoom = 1;
-      panX = 0;
-      panY = 0;
+      zoomController.reset();
       rebuildSpreads(page);
     }
     prefetch?.setSettings(settings);
@@ -980,8 +873,7 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
       else stopAutoscroll();
     }
     if (settings.pagedAutoAdvanceSeconds !== prev.pagedAutoAdvanceSeconds || structural) {
-      if (autoPagedTimer) clearInterval(autoPagedTimer);
-      autoPagedTimer = null;
+      autonav.stopPagedAutoAdvance();
       startPagedAutoAdvance();
     }
     if (settings.chromeGesture !== prev.chromeGesture) syncHandle();
@@ -1084,10 +976,7 @@ export function createImageEngine(options: ImageEngineOptions): ImageEngine {
     destroyed = true;
     renderedSpread = -1;
     transitions.cancel();
-    stopAutoscroll(true);
-    if (autoPagedTimer) clearInterval(autoPagedTimer);
-    if (autoResumeTimer) clearTimeout(autoResumeTimer);
-    if (advanceTimer) clearTimeout(advanceTimer);
+    autonav.destroy();
     clearLongPress();
     handle.destroy();
     root.removeEventListener('keydown', onKeyDown);

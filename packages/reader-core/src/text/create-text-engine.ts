@@ -20,22 +20,19 @@ import { parseCfi, resolveCfiElement, serializeCfi, type ParsedCfi } from './cfi
 import { highlightRangeFromSelection, rangeForHighlight } from './highlight.js';
 import { sanitizeFootnoteHtml } from './sanitize.js';
 import type { HighlightRange, HighlightRecord } from '../source/types.js';
-import {
-  createTtsController,
-  segmentSentences,
-  type TtsSentence,
-  type TtsState,
-  type TtsSynthLike,
-  type TtsUtteranceLike,
-  type TtsVoiceLike,
+import type {
+  TtsState,
+  TtsSynthLike,
+  TtsUtteranceLike,
+  TtsVoiceLike,
 } from './tts.js';
+import { THEME_COLORS, injectTextStyle } from './text-style.js';
+import { TextTtsCoordinator } from './text-tts-coordinator.js';
 import { SearchController } from '../search/search-controller.js';
 import type { SearchHit, SearchSection } from '../search/search-index.js';
 import { instantTransitions, type ReaderTransitions } from '../transitions.js';
 import { createChromeHandle } from '../chrome-handle.js';
 import {
-  buildBaseStylesheet,
-  buildFixedLayoutStylesheet,
   computeTextLayout,
   fixedLayoutScale,
   FLOW_ID,
@@ -52,17 +49,6 @@ import {
   type TextEngineEvents,
   type TextEngineSettings,
 } from './types.js';
-
-const THEME_COLORS: Record<
-  TextEngineSettings['theme'],
-  { color: string; background: string; dark: boolean }
-> = {
-  // warm, editorial — mirrors the demo shell palette (docs/design-language.md)
-  light: { color: '#23201a', background: '#faf7f1', dark: false },
-  sepia: { color: '#4a3f30', background: '#f2e7d3', dark: false },
-  dark: { color: '#d8d1c4', background: '#17150f', dark: true },
-  oled: { color: '#cfc8bb', background: '#000000', dark: true },
-};
 
 const SAVE_DEBOUNCE_MS = 800;
 
@@ -468,119 +454,39 @@ export function createTextEngine(options: CreateTextEngineOptions): TextEngine {
     options.tts?.createUtterance ??
     ((text: string) => new SpeechSynthesisUtterance(text) as unknown as TtsUtteranceLike);
 
-  /** One TTS sentence per `Intl.Segmenter` split of each block's flattened text — same block-ordinal addressing as `HighlightRange`. */
-  const sentencesForSpine = (cdoc: Document): TtsSentence[] => {
-    const blocks = blockElements(cdoc);
-    const out: TtsSentence[] = [];
-    blocks.forEach((el, block) => {
-      for (const s of segmentSentences(el.textContent ?? '')) {
-        out.push({ block, start: s.start, end: s.end, text: s.text });
-      }
-    });
-    return out;
-  };
-
-  const clearTtsHighlight = (cdoc: Document) => {
-    const win = cdoc.defaultView as unknown as HighlightWindow | null;
-    win?.CSS?.highlights?.delete('pore-tts');
-    cdoc.querySelectorAll('mark.pore-tts').forEach((mark) => {
-      const parent = mark.parentNode;
-      if (!parent) return;
-      while (mark.firstChild) parent.insertBefore(mark.firstChild, mark);
-      parent.removeChild(mark);
-    });
-  };
-
-  /** Paint the currently-spoken sentence — its own highlight name/class, kept separate from user highlights. */
-  const paintTtsSentence = (cdoc: Document, range: Range | null) => {
-    clearTtsHighlight(cdoc);
-    if (!range) return;
-    const win = cdoc.defaultView as unknown as HighlightWindow | null;
-    if (win?.CSS?.highlights && win.Highlight) {
-      let style = cdoc.getElementById('pore-tts-style') as HTMLStyleElement | null;
-      if (!style) {
-        style = cdoc.createElement('style');
-        style.id = 'pore-tts-style';
-        cdoc.head?.appendChild(style);
-      }
-      style.textContent = '::highlight(pore-tts){background-color:#fde68a99;}';
-      win.CSS.highlights.set('pore-tts', new win.Highlight(range));
-      return;
-    }
-    try {
-      const mark = cdoc.createElement('mark');
-      mark.className = 'pore-tts';
-      mark.style.backgroundColor = '#fde68a99';
-      range.surroundContents(mark);
-    } catch {
-      // a sentence spanning more than one element can't be wrapped in a
-      // single <mark> — playback continues, just unpainted in this path.
-    }
-  };
-
-  /** Highlight the sentence about to be spoken, and turn the page if it isn't the one currently showing. */
-  const ttsOnSentence = (sentence: TtsSentence | null) => {
-    const cdoc = frame.contentDocument;
-    if (!cdoc) return;
-    const blocks = blockElements(cdoc);
-    const range = sentence
-      ? rangeForHighlight(cdoc, blocks, {
-          spine: spineIndex,
-          startBlock: sentence.block,
-          startOffset: sentence.start,
-          endBlock: sentence.block,
-          endOffset: sentence.end,
-        })
-      : null;
-    paintTtsSentence(cdoc, range);
-    if (!sentence) return;
-    const el = blocks[sentence.block];
-    if (!el || fixedLayoutActive() || flowActive() || layout().vertical) return;
-    const target = Math.min(
-      pageForElement(el, layout().pageStep, relRectOf),
-      Math.max(0, spinePageCount - 1),
-    );
-    if (target !== page) {
+  const tts = new TextTtsCoordinator({
+    synth: ttsSynth,
+    createUtterance: ttsCreateUtterance,
+    getDocument: () => frame.contentDocument,
+    getSpineIndex: () => spineIndex,
+    getSpinePageCount: () => spinePageCount,
+    getCurrentPage: () => page,
+    getPageStep: () => layout().pageStep,
+    relRectOf: (el) => relRectOf(el),
+    isPagingEligible: () => !fixedLayoutActive() && !flowActive() && !layout().vertical,
+    onNavigateToPage: (target) => {
       transitions.cancel();
       page = target;
       renderView();
       emitLocation();
-    }
-  };
-
-  const ttsAdvanceSpine = async (): Promise<boolean> => {
-    if (!book || spineIndex >= lastSpine()) return false;
-    await renderSpine(spineIndex + 1);
-    return true;
-  };
-
-  const tts = createTtsController({
-    synth: ttsSynth ?? {
-      speak: () => {},
-      pause: () => {},
-      resume: () => {},
-      cancel: () => {},
-      getVoices: () => [],
     },
-    createUtterance: ttsCreateUtterance,
-    getSentences: () => {
-      const cdoc = frame.contentDocument;
-      return cdoc ? sentencesForSpine(cdoc) : [];
+    advanceSpine: async (): Promise<boolean> => {
+      if (!book || spineIndex >= lastSpine()) return false;
+      await renderSpine(spineIndex + 1);
+      return true;
     },
-    onSentence: ttsOnSentence,
-    advanceSpine: ttsAdvanceSpine,
     onStateChange: (state) => emitter.emit('reader:ttsstate', state),
   });
 
   /** All `tts*` methods are safe to call when the Web Speech API is unsupported — playback just never starts. */
   function ttsPlay(): void {
-    if (ttsSynth) tts.play();
+    tts.play();
   }
   function ttsPause(): void {
-    if (ttsSynth) tts.pause();
+    tts.pause();
   }
   function ttsResume(): void {
-    if (ttsSynth) tts.resume();
+    tts.resume();
   }
   function ttsStop(): void {
     tts.stop();
@@ -592,7 +498,7 @@ export function createTextEngine(options: CreateTextEngineOptions): TextEngine {
     tts.setVoice(voice);
   }
   function ttsListVoices(): TtsVoiceLike[] {
-    return ttsSynth ? tts.listVoices() : [];
+    return tts.listVoices();
   }
   function ttsState(): TtsState {
     return tts.getState();
@@ -904,33 +810,14 @@ export function createTextEngine(options: CreateTextEngineOptions): TextEngine {
   const injectStyle = () => {
     const cdoc = frame.contentDocument;
     if (!cdoc) return;
-    if (options.fontFaceCss && !cdoc.getElementById('pore-fonts')) {
-      const f = cdoc.createElement('style');
-      f.id = 'pore-fonts';
-      f.textContent = options.fontFaceCss;
-      cdoc.head?.appendChild(f);
-    }
-    let el = cdoc.getElementById('pore-base-style') as HTMLStyleElement | null;
-    if (!el) {
-      el = cdoc.createElement('style');
-      el.id = 'pore-base-style';
-      cdoc.head?.appendChild(el);
-    }
-    const theme = THEME_COLORS[settings.theme];
-    if (fixedLayoutActive()) {
-      el.textContent = buildFixedLayoutStylesheet(fixedPageSizeFor(cdoc), theme.background);
-      return;
-    }
-    el.textContent = buildBaseStylesheet(layout(), {
-      fontSizePct: settings.fontSizePct,
-      lineHeight: settings.lineHeight,
-      textAlign: settings.textAlign,
-      fontFamily: settings.fontFamily,
-      color: theme.color,
-      background: theme.background,
+    injectTextStyle({
+      cdoc,
+      fontFaceCss: options.fontFaceCss,
+      settings,
+      layout: layout(),
       direction: book?.metadata.direction ?? 'ltr',
-      publisherStyles: settings.publisherStyles,
-      dimImages: settings.dimImages && THEME_COLORS[settings.theme].dark,
+      fixedLayout: fixedLayoutActive(),
+      fixedPageSize: fixedPageSizeFor(cdoc),
       flow: flowActive(),
     });
   };

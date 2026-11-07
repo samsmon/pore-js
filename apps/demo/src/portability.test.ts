@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildBundle,
+  isValidBookmark,
+  isValidCfi,
+  isValidHighlight,
   mergeBundle,
   validateBundle,
   type PortableBook,
@@ -78,5 +81,80 @@ describe('portability', () => {
     expect(merged).toHaveLength(1);
     expect(merged[0]!.highlights).toHaveLength(2);
     expect(merged[0]!.bookmarks).toHaveLength(1);
+  });
+
+  describe('SEC-03 runtime schema validation', () => {
+    it('validates CFIs correctly', () => {
+      expect(isValidCfi('epubcfi(/6/4[chap01]!/4/2/10:5)')).toBe(true);
+      expect(isValidCfi('epubcfi(/2)')).toBe(true);
+      expect(isValidCfi('javascript:alert(1)')).toBe(false);
+      expect(isValidCfi('')).toBe(false);
+      expect(isValidCfi(null)).toBe(false);
+      expect(isValidCfi('epubcfi()')).toBe(false);
+    });
+
+    it('validates text and rect highlights', () => {
+      const validText = hl('h1');
+      expect(isValidHighlight(validText)).toBe(true);
+
+      const validRect = {
+        id: 'r1',
+        kind: 'rect' as const,
+        color: '#0f0',
+        text: 'pdf text',
+        createdAt: 1234,
+        page: 0,
+        rects: [{ x: 0.1, y: 0.2, width: 0.5, height: 0.1 }],
+      };
+      expect(isValidHighlight(validRect)).toBe(true);
+
+      // Malicious or corrupt highlights
+      expect(isValidHighlight({ ...validText, id: '' })).toBe(false);
+      expect(isValidHighlight({ ...validText, cfi: { start: 'bad-cfi', end: 'epubcfi(/2)' } })).toBe(false);
+      expect(isValidHighlight({ ...validText, createdAt: NaN })).toBe(false);
+      expect(isValidHighlight({ ...validRect, page: -1 })).toBe(false);
+      expect(isValidHighlight({ ...validRect, rects: [{ x: 'bad' }] })).toBe(false);
+      expect(isValidHighlight({ ...validText, kind: 'unknown' })).toBe(false);
+    });
+
+    it('validates bookmarks and rejects malformed fields', () => {
+      const validBm = bm('b1');
+      expect(isValidBookmark(validBm)).toBe(true);
+
+      expect(isValidBookmark({ ...validBm, page: -1 })).toBe(false);
+      expect(isValidBookmark({ ...validBm, percent: 1.5 })).toBe(false);
+      expect(isValidBookmark({ ...validBm, percent: -0.1 })).toBe(false);
+      expect(isValidBookmark({ ...validBm, cfi: 'malicious-string' })).toBe(false);
+      expect(isValidBookmark({ ...validBm, position: null })).toBe(false);
+      expect(isValidBookmark({ ...validBm, createdAt: Infinity })).toBe(false);
+    });
+
+    it('rejects bundles containing invalid highlight or bookmark entries', () => {
+      const corruptHl = {
+        format: 'pore.js/annotations',
+        version: 1,
+        books: [
+          {
+            id: 'book1',
+            highlights: [{ id: 'bad', text: 'no-cfi' }],
+            bookmarks: [],
+          },
+        ],
+      };
+      expect(validateBundle(corruptHl).ok).toBe(false);
+
+      const corruptBm = {
+        format: 'pore.js/annotations',
+        version: 1,
+        books: [
+          {
+            id: 'book1',
+            highlights: [],
+            bookmarks: [{ id: 'bad', page: -1 }],
+          },
+        ],
+      };
+      expect(validateBundle(corruptBm).ok).toBe(false);
+    });
   });
 });

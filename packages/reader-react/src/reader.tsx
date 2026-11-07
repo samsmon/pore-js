@@ -122,32 +122,70 @@ interface EngineLike {
   destroy(): void;
 }
 
-interface ReaderCtx {
-  bookId: string;
-  source: ReaderSource;
-  kind: ReaderKind | null;
-  manifest: Manifest | null;
+export interface ReaderPositionCtx {
   location: ReaderLocation | null;
   progress: ReaderProgress | null;
+}
+
+export interface ReaderConfigCtx {
+  handle: ReaderHandle;
+  source: ReaderSource;
+  bookId: string;
+  kind: ReaderKind | null;
+  manifest: Manifest | null;
   settings: AnySettings;
   keymap: Keymap;
   toc: TocEntry[];
+  chapters: Chapter[];
+}
+
+export interface ReaderUICtx {
+  chromeVisible: boolean;
   footnote: Footnote | null;
   clearFootnote: () => void;
   endPage: EndPage | null;
-  chromeVisible: boolean;
   resumedFromPage: number | null;
   loading: boolean;
-  chapters: Chapter[];
   error: ReaderErrorInfo | null;
   clearError: () => void;
-  handle: ReaderHandle;
-  selection: TextSelection | null;
+}
+
+export interface ReaderAnnotationsCtx {
   highlights: HighlightRecord[];
+  selection: TextSelection | null;
   ttsState: TtsState | null;
 }
 
-const RuntimeContext = createContext<ReaderCtx | null>(null);
+export type ReaderCtx = ReaderPositionCtx & ReaderConfigCtx & ReaderUICtx & ReaderAnnotationsCtx;
+
+export const ReaderPositionContext = createContext<ReaderPositionCtx | null>(null);
+export const ReaderConfigContext = createContext<ReaderConfigCtx | null>(null);
+export const ReaderUIContext = createContext<ReaderUICtx | null>(null);
+export const ReaderAnnotationsContext = createContext<ReaderAnnotationsCtx | null>(null);
+
+export function useReaderPosition(): ReaderPositionCtx {
+  const ctx = useContext(ReaderPositionContext);
+  if (!ctx) throw new Error('Reader hooks must be used inside <Reader>');
+  return ctx;
+}
+
+export function useReaderConfig(): ReaderConfigCtx {
+  const ctx = useContext(ReaderConfigContext);
+  if (!ctx) throw new Error('Reader hooks must be used inside <Reader>');
+  return ctx;
+}
+
+export function useReaderUI(): ReaderUICtx {
+  const ctx = useContext(ReaderUIContext);
+  if (!ctx) throw new Error('Reader hooks must be used inside <Reader>');
+  return ctx;
+}
+
+export function useReaderAnnotations(): ReaderAnnotationsCtx {
+  const ctx = useContext(ReaderAnnotationsContext);
+  if (!ctx) throw new Error('Reader hooks must be used inside <Reader>');
+  return ctx;
+}
 
 export interface ReaderProps {
   bookId: string;
@@ -402,131 +440,139 @@ export function Reader({
 
   useImperativeHandle(ref, () => handle, [handle]);
 
-  const ctx = useMemo<ReaderCtx>(
+  const positionCtx = useMemo<ReaderPositionCtx>(
+    () => ({ location, progress }),
+    [location, progress],
+  );
+
+  const configCtx = useMemo<ReaderConfigCtx>(
     () => ({
-      bookId,
+      handle,
       source,
+      bookId,
       kind,
       manifest,
-      location,
-      progress,
       settings,
       keymap,
       toc,
+      chapters,
+    }),
+    [handle, source, bookId, kind, manifest, settings, keymap, toc, chapters],
+  );
+
+  const uiCtx = useMemo<ReaderUICtx>(
+    () => ({
+      chromeVisible,
       footnote,
       clearFootnote,
       endPage,
-      chromeVisible,
       resumedFromPage,
       loading: loading.size > 0,
-      chapters,
       error,
       clearError,
-      handle,
-      selection,
+    }),
+    [chromeVisible, footnote, clearFootnote, endPage, resumedFromPage, loading, error, clearError],
+  );
+
+  const annotationsCtx = useMemo<ReaderAnnotationsCtx>(
+    () => ({
       highlights,
+      selection,
       ttsState,
     }),
-    [
-      bookId,
-      source,
-      kind,
-      manifest,
-      location,
-      progress,
-      settings,
-      keymap,
-      toc,
-      footnote,
-      clearFootnote,
-      endPage,
-      chapters,
-      chromeVisible,
-      resumedFromPage,
-      loading,
-      error,
-      clearError,
-      handle,
-      selection,
-      highlights,
-      ttsState,
-    ],
+    [highlights, selection, ttsState],
   );
 
   return (
-    <RuntimeContext.Provider value={ctx}>
-      {children}
-      <div
-        ref={hostRef}
-        className={className}
-        style={{ flex: 1, minHeight: 0, minWidth: 0, ...style }}
-      />
-    </RuntimeContext.Provider>
+    <ReaderConfigContext.Provider value={configCtx}>
+      <ReaderUIContext.Provider value={uiCtx}>
+        <ReaderAnnotationsContext.Provider value={annotationsCtx}>
+          <ReaderPositionContext.Provider value={positionCtx}>
+            {children}
+            <div
+              ref={hostRef}
+              className={className}
+              style={{ flex: 1, minHeight: 0, minWidth: 0, ...style }}
+            />
+          </ReaderPositionContext.Provider>
+        </ReaderAnnotationsContext.Provider>
+      </ReaderUIContext.Provider>
+    </ReaderConfigContext.Provider>
   );
 }
 
-function useRuntime(): ReaderCtx {
-  const ctx = useContext(RuntimeContext);
-  if (!ctx) throw new Error('Reader hooks must be used inside <Reader>');
-  return ctx;
+export function useRuntime(): ReaderCtx {
+  const config = useReaderConfig();
+  const position = useReaderPosition();
+  const ui = useReaderUI();
+  const annotations = useReaderAnnotations();
+  return useMemo<ReaderCtx>(
+    () => ({
+      ...config,
+      ...position,
+      ...ui,
+      ...annotations,
+    }),
+    [config, position, ui, annotations],
+  );
 }
 
 export function useReaderKind(): ReaderKind | null {
-  return useRuntime().kind;
+  return useReaderConfig().kind;
 }
 
 /** The current book's manifest (title, type, page/spine metadata) — `null` until loaded. */
 export function useReaderManifest(): Manifest | null {
-  return useRuntime().manifest;
+  return useReaderConfig().manifest;
 }
 
 export function useReaderLocation(): ReaderLocation | null {
-  return useRuntime().location;
+  return useReaderPosition().location;
 }
 
 /** The shell's "Ch 4 of 12 · 18 min left" data. `null` until the first paint. */
 export function useReaderProgress(): ReaderProgress | null {
-  return useRuntime().progress;
+  return useReaderPosition().progress;
 }
 
 export function useReaderSettings<T extends AnySettings = AnySettings>(): [
   T,
   (patch: Partial<T>) => void,
 ] {
-  const { settings, handle } = useRuntime();
+  const { settings, handle } = useReaderConfig();
   return [settings as T, handle.setSettings as (patch: Partial<T>) => void];
 }
 
 export function useReaderKeymap(): [Keymap, ReaderHandle['setKeymap']] {
-  const { keymap, handle } = useRuntime();
+  const { keymap, handle } = useReaderConfig();
   return [keymap, handle.setKeymap];
 }
 
 export function useTableOfContents(): TocEntry[] {
-  return useRuntime().toc;
+  return useReaderConfig().toc;
 }
 
 export function useFootnote(): [Footnote | null, () => void] {
-  const { footnote, clearFootnote } = useRuntime();
+  const { footnote, clearFootnote } = useReaderUI();
   return [footnote, clearFootnote];
 }
 
 export function useEndPage(): EndPage | null {
-  return useRuntime().endPage;
+  return useReaderUI().endPage;
 }
 
 export function useChromeVisible(): boolean {
-  return useRuntime().chromeVisible;
+  return useReaderUI().chromeVisible;
 }
 
 /** `true` while any page / spine image is still loading. */
 export function useReaderLoading(): boolean {
-  return useRuntime().loading;
+  return useReaderUI().loading;
 }
 
 /** The book's chapters (`{ id, label, startPage, startPercent }`), empty until known. */
 export function useReaderChapters(): Chapter[] {
-  return useRuntime().chapters;
+  return useReaderConfig().chapters;
 }
 
 export interface UseReaderError {
@@ -538,7 +584,9 @@ export interface UseReaderError {
 
 /** The most recent `reader:error`, with a dismiss and a best-effort retry. */
 export function useReaderError(): UseReaderError {
-  const { error, clearError, location, handle } = useRuntime();
+  const { error, clearError } = useReaderUI();
+  const { location } = useReaderPosition();
+  const { handle } = useReaderConfig();
   const retry = useCallback(() => {
     if (location) handle.goto(location.page);
     clearError();
@@ -547,11 +595,11 @@ export function useReaderError(): UseReaderError {
 }
 
 export function useReader(): ReaderHandle {
-  return useRuntime().handle;
+  return useReaderConfig().handle;
 }
 
 export function useResumedFromPage(): number | null {
-  return useRuntime().resumedFromPage;
+  return useReaderUI().resumedFromPage;
 }
 
 export interface ReaderSearch {
@@ -569,7 +617,7 @@ export interface ReaderSearch {
 
 /** Debounced in-book search wired to the active engine (text only today). */
 export function useReaderSearch(opts?: { debounceMs?: number }): ReaderSearch {
-  const { handle, kind } = useRuntime();
+  const { handle, kind } = useReaderConfig();
   const debounceMs = opts?.debounceMs ?? 200;
   const [query, setQuery] = useState('');
   const [hits, setHits] = useState<SearchHit[]>([]);
@@ -628,8 +676,9 @@ export function useReaderSearch(opts?: { debounceMs?: number }): ReaderSearch {
 
 /** The book's saved highlights (empty on engines without one, e.g. image/PDF). */
 export function useReaderHighlights(): HighlightRecord[] {
-  return useRuntime().highlights;
+  return useReaderAnnotations().highlights;
 }
+export const useHighlights = useReaderHighlights;
 
 export interface UseBookmarks {
   bookmarks: Bookmark[];
@@ -651,7 +700,8 @@ export interface UseBookmarks {
  * `goToCfi()` so a bookmark survives re-pagination on a reflowable book.
  */
 export function useBookmarks(): UseBookmarks {
-  const { bookId, source, handle, location } = useRuntime();
+  const { bookId, source, handle } = useReaderConfig();
+  const { location } = useReaderPosition();
   const supported =
     typeof source.loadBookmarks === 'function' && typeof source.saveBookmarks === 'function';
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
@@ -737,7 +787,8 @@ export interface ReaderSelectionApi {
 
 /** Selection-driven highlighting — pair with `selection` to position a floating toolbar. */
 export function useReaderSelection(): ReaderSelectionApi {
-  const { selection, handle } = useRuntime();
+  const { selection } = useReaderAnnotations();
+  const { handle } = useReaderConfig();
   return {
     selection,
     highlight: (opts) => handle.addHighlight(opts),
@@ -745,6 +796,7 @@ export function useReaderSelection(): ReaderSelectionApi {
     updateHighlight: (id, patch) => handle.updateHighlight(id, patch),
   };
 }
+export const useTextSelection = useReaderSelection;
 
 export interface UseTts {
   /** `null` before the engine reports any state (or on engines without TTS, e.g. image/PDF). */
@@ -761,7 +813,8 @@ export interface UseTts {
 
 /** Text-to-speech (stretch goal, EPUB-only) — safe to use on any engine; it's just inert without one. */
 export function useTts(): UseTts {
-  const { ttsState, handle } = useRuntime();
+  const { ttsState } = useReaderAnnotations();
+  const { handle } = useReaderConfig();
   return {
     state: ttsState,
     play: () => handle.ttsPlay(),

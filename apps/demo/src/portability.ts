@@ -38,6 +38,76 @@ export type ValidationResult =
   | { ok: true; bundle: PortabilityBundle }
   | { ok: false; error: string };
 
+export const CFI_RE = /^epubcfi\(.+\)$/;
+
+/** Validate CFI string syntax (must match epubcfi(...)). */
+export function isValidCfi(cfi: unknown): boolean {
+  return typeof cfi === 'string' && CFI_RE.test(cfi.trim());
+}
+
+/** Element-level runtime validator for imported highlights. */
+export function isValidHighlight(raw: unknown): raw is HighlightRecord {
+  if (typeof raw !== 'object' || raw === null) return false;
+  const h = raw as Record<string, unknown>;
+  if (typeof h.id !== 'string' || !h.id.trim()) return false;
+  if (typeof h.color !== 'string' || !h.color.trim()) return false;
+  if (typeof h.text !== 'string') return false;
+  if (typeof h.createdAt !== 'number' || !Number.isFinite(h.createdAt)) return false;
+  if (h.note !== undefined && typeof h.note !== 'string') return false;
+
+  if (h.kind === 'text') {
+    if (typeof h.range !== 'object' || h.range === null) return false;
+    if (typeof h.cfi !== 'object' || h.cfi === null) return false;
+    const cfi = h.cfi as Record<string, unknown>;
+    if (!isValidCfi(cfi.start) || !isValidCfi(cfi.end)) return false;
+    return true;
+  }
+  if (h.kind === 'rect') {
+    if (typeof h.page !== 'number' || !Number.isFinite(h.page) || h.page < 0) return false;
+    if (!Array.isArray(h.rects)) return false;
+    for (const r of h.rects) {
+      if (typeof r !== 'object' || r === null) return false;
+      const rect = r as Record<string, unknown>;
+      if (
+        typeof rect.x !== 'number' ||
+        !Number.isFinite(rect.x) ||
+        typeof rect.y !== 'number' ||
+        !Number.isFinite(rect.y) ||
+        typeof rect.width !== 'number' ||
+        !Number.isFinite(rect.width) ||
+        typeof rect.height !== 'number' ||
+        !Number.isFinite(rect.height)
+      ) {
+        return false;
+      }
+    }
+    return true;
+  }
+  return false;
+}
+
+/** Element-level runtime validator for imported bookmarks. */
+export function isValidBookmark(raw: unknown): raw is Bookmark {
+  if (typeof raw !== 'object' || raw === null) return false;
+  const b = raw as Record<string, unknown>;
+  if (typeof b.id !== 'string' || !b.id.trim()) return false;
+  if (typeof b.page !== 'number' || !Number.isFinite(b.page) || b.page < 0) return false;
+  if (
+    typeof b.percent !== 'number' ||
+    !Number.isFinite(b.percent) ||
+    b.percent < 0 ||
+    b.percent > 1
+  ) {
+    return false;
+  }
+  if (typeof b.label !== 'string') return false;
+  if (typeof b.createdAt !== 'number' || !Number.isFinite(b.createdAt)) return false;
+  if (typeof b.position !== 'object' || b.position === null) return false;
+  if (b.text !== undefined && typeof b.text !== 'string') return false;
+  if (b.cfi !== undefined && !isValidCfi(b.cfi)) return false;
+  return true;
+}
+
 /** Structural validation — enough to trust a merge, not a full schema. */
 export function validateBundle(raw: unknown): ValidationResult {
   if (typeof raw !== 'object' || raw === null) return { ok: false, error: 'Not a JSON object.' };
@@ -55,6 +125,16 @@ export function validateBundle(raw: unknown): ValidationResult {
       return { ok: false, error: `books[${i}].id is missing.` };
     if (!Array.isArray(bk.highlights) || !Array.isArray(bk.bookmarks))
       return { ok: false, error: `books[${i}] is missing highlights/bookmarks arrays.` };
+    for (const [j, hl] of (bk.highlights as unknown[]).entries()) {
+      if (!isValidHighlight(hl)) {
+        return { ok: false, error: `books[${i}].highlights[${j}] is invalid.` };
+      }
+    }
+    for (const [j, bm] of (bk.bookmarks as unknown[]).entries()) {
+      if (!isValidBookmark(bm)) {
+        return { ok: false, error: `books[${i}].bookmarks[${j}] is invalid.` };
+      }
+    }
   }
   return { ok: true, bundle: raw as PortabilityBundle };
 }

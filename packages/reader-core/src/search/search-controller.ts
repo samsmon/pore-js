@@ -101,6 +101,7 @@ export class SearchController {
 
 function defaultWorkerFactory(): (() => Worker) | null {
   if (typeof Worker === 'undefined') return null;
+  if (typeof import.meta?.url !== 'string') return null;
   return () =>
     // `search-worker` sits next to this module in `dist/search/`; bundlers
     // pick up this `new Worker(new URL(...))` form and emit a worker chunk.
