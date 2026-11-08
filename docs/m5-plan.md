@@ -67,28 +67,26 @@ and only take effect for EPUB. Bugs the user reported:
 
 - [ ] **Move menu placement out of `TextEngineSettings`** into a demo-level,
       persisted setting owned by the demo shell — it's chrome placement, the
-      *engine* shouldn't care. Applies to every engine (manga / webtoon /
+      _engine_ shouldn't care. Applies to every engine (manga / webtoon /
       novel / PDF / fixed-layout). Keep the old `menuPosition`/`menuReveal`
       fields as deprecated no-ops for one release, or delete outright (they're
       pre-1.0 and unused outside the demo — likely just delete).
 - [ ] **Placement**: `top` · `left` · `right` (bottom is a cut, see below).
-- [ ] **Behaviour**: `docked` vs `auto-hide`.
-      - *Docked*: the bar is a real `flex-none` child of the shell (a row for
-        `top`, a column for `left`/`right`); the reader host fills the rest.
-        **No dead strip** — this is the fix for the reported bug.
-      - *Auto-hide*: the bar is an `position: absolute` overlay pinned to its
-        edge (zero layout footprint); it slides out after idle and slides
-        back on *any* of: pointer within ~48 px of that edge, any keypress,
-        `focus-within`, an open panel/dialog. A thin always-present hover
-        hot-zone along the edge makes "pointer near the edge" reliable (and
-        fixes the Playwright-can't-reveal-it problem found in M4 F6).
+- [ ] **Behaviour**: `docked` vs `auto-hide`. - _Docked_: the bar is a real `flex-none` child of the shell (a row for
+      `top`, a column for `left`/`right`); the reader host fills the rest.
+      **No dead strip** — this is the fix for the reported bug. - _Auto-hide_: the bar is an `position: absolute` overlay pinned to its
+      edge (zero layout footprint); it slides out after idle and slides
+      back on _any_ of: pointer within ~48 px of that edge, any keypress,
+      `focus-within`, an open panel/dialog. A thin always-present hover
+      hot-zone along the edge makes "pointer near the edge" reliable (and
+      fixes the Playwright-can't-reveal-it problem found in M4 F6).
 - [ ] **Fullscreen integration**: a `useFullscreen()` hook in the demo
       (`requestFullscreen` / `exitFullscreen` + `fullscreenchange`). Entering
       fullscreen switches behaviour to `auto-hide` for that session; leaving
       restores the user's chosen behaviour. (Open question #2: force it, or
       just make it the default-on-enter?)
 - [ ] **Settings UI**: one "Menu bar" group in the demo settings panel —
-      *Placement* (Top / Left / Right) and *Behaviour* (Always visible /
+      _Placement_ (Top / Left / Right) and _Behaviour_ (Always visible /
       Auto-hide). Available for every book type.
 - [ ] `use-auto-hide.ts` reworked: takes the edge + the behaviour, owns the
       hot-zone listener, exposes `[hidden, pin]` unchanged so the call sites
@@ -121,7 +119,7 @@ colour/note change (`key`) rather than being controlled — fine for a list.
 <details><summary>Original plan</summary>
 
 F2 shipped highlights with a `note` field on `HighlightRecord` and the engine
-API, but no way to *write* a note, and the demo's highlights list is ad-hoc
+API, but no way to _write_ a note, and the demo's highlights list is ad-hoc
 markup in `Chrome.tsx`.
 
 - [ ] `TextEngine.updateHighlight(id, { color?, note? })` (today: only
@@ -234,8 +232,7 @@ turns two at a time.
 
 ## F6 — hardening + release · S · **DONE**
 
-- [x] a11y: menu-bar settings, note editor, highlights panel keyboard-reachable
-      + axe clean (new e2e "M5 UI … is axe clean & keyboard-reachable"). Fixed
+- [x] a11y: menu-bar settings, note editor, highlights panel keyboard-reachable + axe clean (new e2e "M5 UI … is axe clean & keyboard-reachable"). Fixed
       two contrast fails found doing it: `.menubar-settings__hint` (tiny muted
       text) and `.bar button.active` (orange fill vs white label → now the
       theme foreground, matching the progress bar).
@@ -244,7 +241,7 @@ turns two at a time.
       isn't drivable headless; F3b deferred.)
 - [x] Perf: PDF highlight overlay repaints on turn / resize / image-load only,
       never on a scroll tick; no hover hot-zone listener (deferred in G1).
-- [x] CHANGELOG `v0.8.0-comfort`; README; `CLAUDE.md` pointer.
+- [x] CHANGELOG `v0.8.0-comfort`; README.
 - [x] Tag `v0.8.0-comfort`.
 
 ---
@@ -271,7 +268,7 @@ turns two at a time.
    `TextEngineSettings.menuPosition` gets deleted (fine pre-1.0, nothing
    external uses it).
 2. **Fullscreen + auto-hide** — force `auto-hide` while fullscreen (can't
-   dock), or just make it the default when you *enter* fullscreen (you can
+   dock), or just make it the default when you _enter_ fullscreen (you can
    still switch back to docked)? Leaning "default on enter, still switchable".
 3. **PDF highlight storage** — a `kind` discriminant on `HighlightRecord`
    (one collection, one union type) vs a parallel `RectHighlightRecord[]`.

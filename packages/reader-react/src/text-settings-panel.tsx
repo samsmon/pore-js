@@ -1,7 +1,14 @@
 import { useState } from 'react';
 import type { TextEngineSettings } from 'porejs';
 import { useReaderSettings } from './reader.js';
-import { Accordion, SelectField, SliderField, SwitchField, Tabs, type TabDef } from './primitives.js';
+import {
+  Accordion,
+  SelectField,
+  SliderField,
+  SwitchField,
+  Tabs,
+  type TabDef,
+} from './primitives.js';
 
 /** The Text/Theme/Navigation section set for an EPUB or PDF — tabs, or a stacked accordion for narrow chrome. */
 export function TextSettingsPanel({
@@ -148,5 +155,7 @@ export function TextSettingsPanel({
   ];
 
   if (layout === 'accordion') return <Accordion items={tabs} />;
-  return <Tabs tabs={tabs} value={tab} onValueChange={setTab} {...(trailing ? { trailing } : {})} />;
+  return (
+    <Tabs tabs={tabs} value={tab} onValueChange={setTab} {...(trailing ? { trailing } : {})} />
+  );
 }

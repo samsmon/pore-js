@@ -16,16 +16,16 @@ Reference implementation: [`apps/demo/src/portability.ts`](../apps/demo/src/port
 {
   "format": "pore.js/annotations",
   "version": 1,
-  "exportedAt": 1725600000000,        // Date.now() at export
+  "exportedAt": 1725600000000, // Date.now() at export
   "books": [
     {
-      "id": "demo-book",              // the source's book id — the merge key
+      "id": "demo-book", // the source's book id — the merge key
       "title": "Novel (EPUB)",
-      "position": { /* Position | null */ },   // resume checkpoint, may be null
-      "highlights": [ /* HighlightRecord[] */ ],
-      "bookmarks":  [ /* Bookmark[] */ ]
-    }
-  ]
+      "position": {/* Position | null */}, // resume checkpoint, may be null
+      "highlights": [/* HighlightRecord[] */],
+      "bookmarks": [/* Bookmark[] */],
+    },
+  ],
 }
 ```
 
@@ -33,10 +33,10 @@ Reference implementation: [`apps/demo/src/portability.ts`](../apps/demo/src/port
 [`architecture.md`](architecture.md)). In brief:
 
 - **Text highlight** (`kind: "text"`): `{ id, kind, color, text, note?,
-  createdAt, range, cfi: { start, end } }`. `cfi` is the portable anchor; `range`
+createdAt, range, cfi: { start, end } }`. `cfi` is the portable anchor; `range`
   is a fast local re-resolve hint.
 - **Rect highlight** (`kind: "rect"`, PDF / fixed pages): `{ id, kind, color,
-  text, note?, createdAt, page, rects: NormRect[] }`. Anchored to normalised
+text, note?, createdAt, page, rects: NormRect[] }`. Anchored to normalised
   page boxes — portable as long as the same PDF is used.
 - **Bookmark**: `{ id, position, cfi?, page, percent, label, text?, createdAt }`.
 
@@ -59,7 +59,7 @@ best-effort parsed.
    collections merged.
 2. **Record** — highlights and bookmarks are matched on their own `id`. A record
    whose id is already present is **skipped** (kept as-is) unless `overwrite:
-   true`, in which case the incoming copy replaces it.
+true`, in which case the incoming copy replaces it.
 
 `position` is only taken from the import when the local book has none (or always,
 under `overwrite`). The report returned counts `{ books, highlights, bookmarks,

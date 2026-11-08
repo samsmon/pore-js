@@ -24,9 +24,30 @@ export const SERIES: Series[] = [
 ];
 
 export const VOLUMES: Volume[] = [
-  { id: 'tidepool-v1', seriesSlug: 'tidepool', volume: 1, chapterTitle: 'Low Water', pageCount: 8, direction: 'rtl' },
-  { id: 'tidepool-v2', seriesSlug: 'tidepool', volume: 2, chapterTitle: 'The Spring Tide', pageCount: 10, direction: 'rtl' },
-  { id: 'emberline-v1', seriesSlug: 'emberline', volume: 1, chapterTitle: 'Kindling', pageCount: 9, direction: 'ltr' },
+  {
+    id: 'tidepool-v1',
+    seriesSlug: 'tidepool',
+    volume: 1,
+    chapterTitle: 'Low Water',
+    pageCount: 8,
+    direction: 'rtl',
+  },
+  {
+    id: 'tidepool-v2',
+    seriesSlug: 'tidepool',
+    volume: 2,
+    chapterTitle: 'The Spring Tide',
+    pageCount: 10,
+    direction: 'rtl',
+  },
+  {
+    id: 'emberline-v1',
+    seriesSlug: 'emberline',
+    volume: 1,
+    chapterTitle: 'Kindling',
+    pageCount: 9,
+    direction: 'ltr',
+  },
 ];
 
 export const seriesOf = (v: Volume) => SERIES.find((s) => s.slug === v.seriesSlug)!;

@@ -33,6 +33,8 @@ export interface PdfEngine extends Omit<ImageEngine, 'on'> {
     event: E,
     handler: (payload: PdfEngineEvents[E]) => void,
   ): () => void;
+  /** Navigate to a PDF outline href (`#page=N`, 1-based). */
+  goToHref(href: string): void;
   /** Full-text search across the PDF (via pdf.js's per-page text layer). */
   search(query: string): Promise<SearchHit[]>;
   /** Jump to a hit's page. */
@@ -74,7 +76,10 @@ export function createPdfEngine(options: CreatePdfEngineOptions): PdfEngine {
   const scheduleSave = () => {
     if (!source.saveHighlights) return;
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => void source.saveHighlights?.(bookId, highlights).catch(() => {}), 400);
+    saveTimer = setTimeout(
+      () => void source.saveHighlights?.(bookId, highlights).catch(() => {}),
+      400,
+    );
   };
 
   const overlay = createPdfHighlightOverlay({
@@ -105,9 +110,7 @@ export function createPdfEngine(options: CreatePdfEngineOptions): PdfEngine {
     void (async () => {
       const loaded = (await source.loadHighlights?.(bookId)) ?? [];
       if (destroyed) return;
-      highlights = loaded.filter(
-        (h): h is RectHighlightRecord => h.kind === 'rect',
-      );
+      highlights = loaded.filter((h): h is RectHighlightRecord => h.kind === 'rect');
       overlay.setHighlights(highlights);
       emitHighlights();
     })();
@@ -167,9 +170,7 @@ export function createPdfEngine(options: CreatePdfEngineOptions): PdfEngine {
   // ---- search -------------------------------------------------------------
 
   const search = new SearchController(
-    options.searchWorkerFactory !== undefined
-      ? { workerFactory: options.searchWorkerFactory }
-      : {},
+    options.searchWorkerFactory !== undefined ? { workerFactory: options.searchWorkerFactory } : {},
   );
   let searchBuilt: Promise<void> | null = null;
 
@@ -195,6 +196,15 @@ export function createPdfEngine(options: CreatePdfEngineOptions): PdfEngine {
 
   const gotoHit = (hit: SearchHit): void => engine.goto(hit.sectionIndex);
 
+  const goToHref = (href: string): void => {
+    const m = /(?:#|^)page=(\d+)/i.exec(href.trim());
+    if (!m) return;
+    const pageNum = Number(m[1]);
+    if (Number.isFinite(pageNum) && pageNum >= 1) {
+      engine.goto(pageNum - 1);
+    }
+  };
+
   const mount = async (): Promise<void> => {
     await engine.mount();
     if (destroyed) return;
@@ -203,6 +213,7 @@ export function createPdfEngine(options: CreatePdfEngineOptions): PdfEngine {
   return {
     ...engine,
     mount,
+    goToHref,
     on(event, handler) {
       if (event === 'reader:toc') {
         const l = handler as unknown as (p: { toc: TocEntry[] }) => void;

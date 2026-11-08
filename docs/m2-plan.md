@@ -110,7 +110,7 @@ _(pdf.js text layer for selection/search → D5 / M3)_
 ## D5 — shared chrome data (design doc §9) · M ✅
 
 - [x] Every engine emits `reader:progress { locator, percent, chapterLabel,
-      chapterIndex, chapterCount, pagesLeftInChapter, minutesLeft }` alongside
+chapterIndex, chapterCount, pagesLeftInChapter, minutesLeft }` alongside
       `reader:locationchange`
 - [x] `minutesLeft`: shared `PaceEstimator` — an EMA of wall-clock seconds per
       page, seeded per format (image 8s, text 30s), eased toward the reader's
@@ -118,8 +118,7 @@ _(pdf.js text layer for selection/search → D5 / M3)_
 - [x] Chapter model unified: `chapters(): Chapter[]` on every engine —
       `{ id, label, startPage, startPercent }`. Image ← `manifest.chapters`;
       text ← one entry per spine item (label from the TOC); PDF ← outline
-      (through the image path). `chapterProgress()` maps a page → current chapter
-      + pages remaining.
+      (through the image path). `chapterProgress()` maps a page → current chapter + pages remaining.
 - [x] `reader-react` `useReaderProgress()` hook + `handle.chapters()`
 - [x] Vitest (9): `chapterProgress` boundaries, `PaceEstimator` EMA + clamps +
       rounding, image engine emits `reader:progress`

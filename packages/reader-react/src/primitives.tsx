@@ -239,12 +239,7 @@ export function Tabs({
         {trailing}
       </div>
       {tabs.map((t) => (
-        <RTabs.Content
-          key={t.id}
-          value={t.id}
-          className="pore-settings__body"
-          data-pore-tabpanel
-        >
+        <RTabs.Content key={t.id} value={t.id} className="pore-settings__body" data-pore-tabpanel>
           {t.content}
         </RTabs.Content>
       ))}

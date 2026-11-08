@@ -191,8 +191,7 @@ export function createPdfHighlightOverlay(opts: PdfHighlightOverlayOptions) {
   container.addEventListener('dragstart', onDragStart);
   container.addEventListener('load', onLoadCapture, true);
 
-  const ro =
-    typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => paint()) : null;
+  const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => paint()) : null;
   ro?.observe(container);
 
   return {

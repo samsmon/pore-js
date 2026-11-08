@@ -53,7 +53,8 @@ describe('perf guard rails', () => {
         (_, s) =>
           `<section id="s${s}"><h2>Section ${s}</h2>${Array.from(
             { length: 15 },
-            (_, p) => `<p id="s${s}p${p}">para ${p} with <em>emphasis</em> and <span>a span</span>.</p>`,
+            (_, p) =>
+              `<p id="s${s}p${p}">para ${p} with <em>emphasis</em> and <span>a span</span>.</p>`,
           ).join('')}</section>`,
       ).join('')}</body>`,
       'text/html',

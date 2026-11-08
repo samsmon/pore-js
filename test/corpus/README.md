@@ -24,7 +24,7 @@ downloaded files. When `files/` is empty it reports "skipped".
 ## What it checks
 
 Because jsdom can't run the text engine's real iframe pagination (see
-`docs/architecture.md`), the corpus test covers the layers it *can*:
+`docs/architecture.md`), the corpus test covers the layers it _can_:
 
 - `parseEpub` / `loadPdf` don't throw on the real container/OPF/PDF structure
 - the manifest is sane (spine length, TOC depth, page count)

@@ -14,7 +14,14 @@ import {
   useReaderLocation,
 } from 'porejs-react';
 import gsap from 'gsap';
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type MutableRefObject } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type MutableRefObject,
+} from 'react';
 import { Chrome } from './Chrome.js';
 import { OpdsBrowser } from './OpdsBrowser.js';
 import { AnnotationsReview, type JumpTarget } from './AnnotationsReview.js';
@@ -119,7 +126,12 @@ const BOOKS: SampleBook[] = [
     blurb: 'Reflowable text, adjustable typography',
     glyph: 'text',
   },
-  { id: 'demo-vertical', label: '縦書き', blurb: 'Vertical Japanese (tategaki)', glyph: 'vertical' },
+  {
+    id: 'demo-vertical',
+    label: '縦書き',
+    blurb: 'Vertical Japanese (tategaki)',
+    glyph: 'vertical',
+  },
   { id: 'demo-rtl', label: 'عربي', blurb: 'Right-to-left prose (Arabic)', glyph: 'rtl' },
   {
     id: 'demo-fixed',
@@ -194,7 +206,13 @@ export function App() {
     const name = (first && 'name' in first ? first.name : '') || local.bookId;
     const ext = name.toLowerCase().split('.').pop() ?? '';
     const glyph: ModeGlyph =
-      ext === 'pdf' ? 'pdf' : ext === 'epub' ? 'text' : ext === 'cbz' || ext === 'zip' ? 'spread' : 'strip';
+      ext === 'pdf'
+        ? 'pdf'
+        : ext === 'epub'
+          ? 'text'
+          : ext === 'cbz' || ext === 'zip'
+            ? 'spread'
+            : 'strip';
     setView({ kind: 'file', source: new CachedSource(local), bookId: local.bookId, name });
     library.record({ id: local.bookId, title: name.replace(/\.[^.]+$/, ''), glyph, kind: 'file' });
     void local.getManifest(local.bookId).then(() => {

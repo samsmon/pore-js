@@ -9,11 +9,16 @@ import { useMemo, useRef, type CSSProperties, type ReactNode, type Ref } from 'r
 import { ReaderProvider } from './provider.js';
 import { Reader, type ReaderHandle, type ReaderLocation, type ReaderProps } from './reader.js';
 
-export interface BookProps
-  extends Pick<
-    ReaderProps,
-    'className' | 'children' | 'transitions' | 'persistSettings' | 'fontFaceCss' | 'ref' | 'initialSettings'
-  > {
+export interface BookProps extends Pick<
+  ReaderProps,
+  | 'className'
+  | 'children'
+  | 'transitions'
+  | 'persistSettings'
+  | 'fontFaceCss'
+  | 'ref'
+  | 'initialSettings'
+> {
   /** A URL to a `.cbz` / `.zip` / `.epub` / `.pdf`. */
   src?: string;
   /** A list of image URLs — one manga chapter, comic pages, a scan. */
@@ -96,7 +101,8 @@ export function Book({
   // re-create the source only when the *target* changes (`key`), not on every
   // render — `input` / `onProgress` are captured deliberately.
   const source = useMemo(
-    () => createReaderSource({ ...input, onProgress: (pos) => onProgress?.(pos, percentRef.current) }),
+    () =>
+      createReaderSource({ ...input, onProgress: (pos) => onProgress?.(pos, percentRef.current) }),
     [key],
   );
 

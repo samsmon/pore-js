@@ -49,7 +49,12 @@ function textBoundaryPoint(node: Node, offset: number): { node: Node; offset: nu
 }
 
 /** Character offset (into `el`'s flattened `textContent`) of a Range boundary point (`node`/`nodeOffset`, element- or text-node-relative per DOM Range semantics), or `null` when it isn't inside `el`. */
-export function offsetOfPoint(el: Element, doc: Document, node: Node, nodeOffset: number): number | null {
+export function offsetOfPoint(
+  el: Element,
+  doc: Document,
+  node: Node,
+  nodeOffset: number,
+): number | null {
   if (!el.contains(node)) return null;
   const point = textBoundaryPoint(node, nodeOffset);
   if (point.node.nodeType !== Node.TEXT_NODE) return el === point.node ? 0 : null;
@@ -64,7 +69,11 @@ export function offsetOfPoint(el: Element, doc: Document, node: Node, nodeOffset
 }
 
 /** Build a `Range` spanning a highlight's endpoints, resolved against `blocks` (from `blockElements`). */
-export function rangeForHighlight(doc: Document, blocks: Element[], h: HighlightRange): Range | null {
+export function rangeForHighlight(
+  doc: Document,
+  blocks: Element[],
+  h: HighlightRange,
+): Range | null {
   const startEl = blocks[h.startBlock];
   const endEl = blocks[h.endBlock];
   if (!startEl || !endEl) return null;
@@ -86,7 +95,12 @@ export function highlightRangeFromSelection(
   const startBlock = blocks.findIndex((b) => b.contains(range.startContainer));
   const endBlock = blocks.findIndex((b) => b.contains(range.endContainer));
   if (startBlock === -1 || endBlock === -1) return null;
-  const startOffset = offsetOfPoint(blocks[startBlock]!, doc, range.startContainer, range.startOffset);
+  const startOffset = offsetOfPoint(
+    blocks[startBlock]!,
+    doc,
+    range.startContainer,
+    range.startOffset,
+  );
   const endOffset = offsetOfPoint(blocks[endBlock]!, doc, range.endContainer, range.endOffset);
   if (startOffset === null || endOffset === null) return null;
   return { spine: 0, startBlock, startOffset, endBlock, endOffset };

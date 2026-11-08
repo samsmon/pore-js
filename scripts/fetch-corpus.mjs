@@ -61,7 +61,9 @@ for (const book of books) {
 }
 
 if (unpinned) {
-  console.log(`\n${unpinned} book(s) have no pinned sha256 — copy the printed hashes into test/corpus/sources.json.`);
+  console.log(
+    `\n${unpinned} book(s) have no pinned sha256 — copy the printed hashes into test/corpus/sources.json.`,
+  );
 }
 if (failed) {
   console.error(`\n${failed} download(s) failed.`);

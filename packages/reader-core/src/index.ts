@@ -67,7 +67,11 @@ export type { Keymap, ActionId } from './settings/keymap.js';
 export { DEFAULT_KEYMAP, resolveAction } from './settings/keymap.js';
 
 // ── Image engine ─────────────────────────────────────────────────────────────
-export { createImageEngine, physicalToLogical, isReverseDirection } from './image/create-image-engine.js';
+export {
+  createImageEngine,
+  physicalToLogical,
+  isReverseDirection,
+} from './image/create-image-engine.js';
 export type { ImageEngine, ImageEngineOptions, Unsubscribe } from './image/engine.js';
 export type { ImageEngineEvents, ImageEngineEventName, PageLoadState } from './image/types.js';
 
@@ -121,10 +125,7 @@ export type {
 export { LocalFileSource } from './source/local-file-source.js';
 export type { LocalFileSourceOptions } from './source/local-file-source.js';
 export { createReaderSource, readerSourceKey } from './source/create-reader-source.js';
-export type {
-  CreateReaderSourceInput,
-  ReaderMeta,
-} from './source/create-reader-source.js';
+export type { CreateReaderSourceInput, ReaderMeta } from './source/create-reader-source.js';
 export {
   KavitaSource,
   KavitaAuthError,

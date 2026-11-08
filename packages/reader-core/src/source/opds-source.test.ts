@@ -70,9 +70,9 @@ describe('OpdsSource', () => {
   it('throws when an entry has no acquisition link', async () => {
     const { fetch } = fakeOpds();
     const src = new OpdsSource(BASE, { fetch });
-    await expect(
-      src.acquire({ id: '1', title: 'No Link', links: [] }),
-    ).rejects.toThrow(/no acquisition link/);
+    await expect(src.acquire({ id: '1', title: 'No Link', links: [] })).rejects.toThrow(
+      /no acquisition link/,
+    );
   });
 
   it('throws with the HTTP status on a failed catalog fetch', async () => {

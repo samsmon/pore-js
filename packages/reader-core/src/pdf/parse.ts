@@ -43,9 +43,14 @@ function probeCanvas() {
     let webp = false;
     try {
       if (offscreen) {
-        webp = (await new OffscreenCanvas(1, 1).convertToBlob({ type: 'image/webp' })).type === 'image/webp';
+        webp =
+          (await new OffscreenCanvas(1, 1).convertToBlob({ type: 'image/webp' })).type ===
+          'image/webp';
       } else if (typeof document !== 'undefined') {
-        webp = document.createElement('canvas').toDataURL('image/webp').startsWith('data:image/webp');
+        webp = document
+          .createElement('canvas')
+          .toDataURL('image/webp')
+          .startsWith('data:image/webp');
       }
     } catch {
       webp = false;

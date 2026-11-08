@@ -24,23 +24,35 @@ const OPF = `<?xml version="1.0"?>
   <spine><itemref idref="c1"/></spine>
 </package>`;
 
-const zip = (files: Record<string, string>) => zipSync(Object.fromEntries(
-  Object.entries(files).map(([k, v]) => [k, strToU8(v)]),
-));
+const zip = (files: Record<string, string>) =>
+  zipSync(Object.fromEntries(Object.entries(files).map(([k, v]) => [k, strToU8(v)])));
 
 describe('parseEpub — malformed archives', () => {
   const cases: Array<[string, Uint8Array]> = [
     ['empty buffer', new Uint8Array()],
     ['not a zip', strToU8('this is plainly not a zip file at all')],
-    ['truncated zip', zip({ 'mimetype': 'application/epub+zip' }).slice(0, 12)],
+    ['truncated zip', zip({ mimetype: 'application/epub+zip' }).slice(0, 12)],
     ['zip without container.xml', zip({ 'OEBPS/content.opf': OPF })],
-    ['container.xml is not XML', zip({ 'META-INF/container.xml': 'nope', 'OEBPS/content.opf': OPF })],
-    ['container names a missing OPF', zip({ 'META-INF/container.xml': container('OEBPS/nope.opf') })],
-    ['OPF is malformed XML', zip({ 'META-INF/container.xml': container(), 'OEBPS/content.opf': '<package' })],
-    ['OPF has no spine', zip({
-      'META-INF/container.xml': container(),
-      'OEBPS/content.opf': '<?xml version="1.0"?><package xmlns="http://www.idpf.org/2007/opf"><manifest/></package>',
-    })],
+    [
+      'container.xml is not XML',
+      zip({ 'META-INF/container.xml': 'nope', 'OEBPS/content.opf': OPF }),
+    ],
+    [
+      'container names a missing OPF',
+      zip({ 'META-INF/container.xml': container('OEBPS/nope.opf') }),
+    ],
+    [
+      'OPF is malformed XML',
+      zip({ 'META-INF/container.xml': container(), 'OEBPS/content.opf': '<package' }),
+    ],
+    [
+      'OPF has no spine',
+      zip({
+        'META-INF/container.xml': container(),
+        'OEBPS/content.opf':
+          '<?xml version="1.0"?><package xmlns="http://www.idpf.org/2007/opf"><manifest/></package>',
+      }),
+    ],
   ];
 
   for (const [name, bytes] of cases) {
@@ -61,8 +73,7 @@ describe('parseEpub — malformed archives', () => {
 });
 
 describe('LocalFileSource — hostile files', () => {
-  const mk = (name: string, bytes: BlobPart) =>
-    new LocalFileSource([new File([bytes], name)]);
+  const mk = (name: string, bytes: BlobPart) => new LocalFileSource([new File([bytes], name)]);
 
   it('a 0-byte .epub → getManifest is lazy, but parsing the file fails cleanly', async () => {
     const src = mk('book.epub', new Uint8Array());

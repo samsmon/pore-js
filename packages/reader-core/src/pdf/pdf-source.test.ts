@@ -7,7 +7,11 @@ const fakeDoc = (over: Partial<PdfDoc> = {}): PdfDoc => ({
   pageCount: 3,
   outline: [
     { label: 'Intro', href: '#page=1', children: [] },
-    { label: 'Body', href: '#page=2', children: [{ label: 'Body.a', href: '#page=3', children: [] }] },
+    {
+      label: 'Body',
+      href: '#page=2',
+      children: [{ label: 'Body.a', href: '#page=3', children: [] }],
+    },
   ],
   pageSize: async () => ({ width: 612, height: 792 }),
   renderToBlob: async () => new Blob([new Uint8Array([1, 2])], { type: 'image/webp' }),
@@ -103,6 +107,11 @@ describe('createPdfEngine', () => {
     await new Promise((r) => setTimeout(r, 10));
     expect(ready).toHaveLength(1);
     expect((tocs[0] as { label: string }[]).map((t) => t.label)).toEqual(['Intro', 'Body']);
+
+    const locs: Array<{ page: number }> = [];
+    engine.on('reader:locationchange', (p) => locs.push(p));
+    engine.goToHref('#page=2');
+    expect(locs.at(-1)?.page).toBe(1);
     engine.destroy();
   });
 

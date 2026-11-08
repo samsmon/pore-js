@@ -89,14 +89,14 @@ describe('KavitaSource', () => {
     expect(await src.getManifest('42')).toMatchObject({ type: 'pdf' });
   });
 
-  it('fetches a page image with the api key and bearer token', async () => {
+  it('fetches a page image with bearer token without leaking apiKey in URL', async () => {
     const { src, calls } = fakeKavita();
     const blob = await src.getPage('42', 4);
     expect(blob.type).toBe('image/webp');
     const img = calls.find((c) => c.url.includes('/api/Reader/image'))!;
     expect(img.url).toContain('chapterId=42');
     expect(img.url).toContain('page=4');
-    expect(img.url).toContain('apiKey=secret');
+    expect(img.url).not.toContain('apiKey=');
     expect((img.init?.headers as Record<string, string>).authorization).toMatch(/^Bearer jwt-/);
   });
 

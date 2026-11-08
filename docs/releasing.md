@@ -59,12 +59,12 @@ cut (M8 H10).
 
 `release.yml` needs to authenticate to npm. Either:
 
-- **A repo secret `NPM_TOKEN`** — an npm *automation* token
+- **A repo secret `NPM_TOKEN`** — an npm _automation_ token
   (npmjs.com → Access Tokens → Generate → Automation). Simple.
 - **Trusted Publishing (no token)** — on npmjs.com, for each of `porejs` and
   `porejs-react`, add a trusted publisher: this repo (`srytmj/pore-js`),
   workflow `release.yml`. Provenance still works; nothing to rotate. For the
-  *first* publish the package must already exist, so do the first `1.0.0-rc.1`
+  _first_ publish the package must already exist, so do the first `1.0.0-rc.1`
   publish with a token, then switch.
 
 `publishConfig.provenance: true` is already set in both `package.json`s, and

@@ -78,4 +78,16 @@ describe('rewriteResources', () => {
     expect(html).toContain('https://x/y.png');
     expect(urls).toHaveLength(0);
   });
+
+  it('rewrites SVG <image xlink:href> and <use xlink:href> to blob URLs', () => {
+    const book = fakeBook({ 'OEBPS/images/cover.jpg': { text: 'JPG', type: 'image/jpeg' } });
+    const { html, urls } = rewriteResources(
+      '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Cover</title></head><body><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 600 800"><image width="600" height="800" xlink:href="images/cover.jpg"/></svg></body></html>',
+      book,
+      'OEBPS/cover.xhtml',
+      new DOMParser(),
+    );
+    expect(html).toContain('xlink:href="blob:mock/1"');
+    expect(urls).toHaveLength(1);
+  });
 });

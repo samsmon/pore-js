@@ -1,0 +1,294 @@
+@layer components {
+  .progress {
+    @apply h-[3px] flex-none bg-fg transition-[width] duration-200;
+  }
+  .progress--loading {
+    @apply fixed inset-x-0 top-0 z-30 w-2/5;
+    animation: pore-progress-indeterminate 1.1s ease-in-out infinite alternate;
+  }
+
+  /* --- bottom scrubber --------------------------------------------------- */
+  .scrubber-dock {
+    @apply fixed inset-x-0 bottom-0 z-30 px-3 pt-2 pb-2 transition-transform duration-300;
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+  }
+  .scrubber-dock--hidden:not(:hover):not(:focus-within) {
+    transform: translateY(100%);
+  }
+  .pore-scrubber {
+    @apply mx-auto flex max-w-3xl flex-col gap-1;
+  }
+  .pore-scrubber__slider {
+    @apply relative flex h-5 w-full touch-none items-center select-none;
+  }
+  .pore-scrubber__track {
+    @apply relative h-[3px] grow overflow-visible rounded-full bg-fg/20;
+  }
+  .pore-scrubber__range {
+    @apply absolute h-full rounded-full bg-fg;
+  }
+  .pore-scrubber__tick {
+    @apply absolute top-1/2 h-2.5 w-px -translate-x-1/2 -translate-y-1/2 bg-fg/35;
+  }
+  .pore-scrubber__thumb {
+    @apply block size-3.5 rounded-full bg-fg transition-transform border-2 border-surface;
+  }
+  .pore-scrubber__thumb:hover,
+  .pore-scrubber__thumb:focus-visible,
+  .pore-scrubber__slider[data-dragging] .pore-scrubber__thumb {
+    @apply scale-125;
+  }
+  .pore-scrubber__thumb:focus-visible {
+    @apply outline-2 outline-offset-2 outline-fg;
+  }
+  .pore-scrubber__label {
+    @apply text-center text-[0.72rem] text-muted [font-variant-numeric:tabular-nums];
+  }
+
+  /* --- minimal edge progress lightbar -------------------------------------- */
+  .pore-lightbar {
+    @apply fixed z-30 pointer-events-none transition-opacity duration-300;
+  }
+  .pore-lightbar--bottom {
+    @apply inset-x-0 bottom-0 w-full bg-fg/15;
+  }
+  .pore-lightbar--left {
+    @apply inset-y-0 left-0 h-full bg-fg/15;
+  }
+  .pore-lightbar--right {
+    @apply inset-y-0 right-0 h-full bg-fg/15;
+  }
+  .pore-lightbar__fill {
+    @apply h-full bg-neutral-400 dark:bg-neutral-300 transition-[width] duration-200;
+  }
+  .pore-lightbar--left .pore-lightbar__fill,
+  .pore-lightbar--right .pore-lightbar__fill {
+    @apply w-full transition-[height];
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .scrubber-dock,
+    .pore-scrubber__thumb {
+      transition: none;
+    }
+  }
+  @keyframes pore-progress-indeterminate {
+    from {
+      margin-left: 0%;
+      width: 12%;
+    }
+    to {
+      margin-left: 88%;
+      width: 30%;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .progress--loading {
+      animation: none;
+      @apply w-1/4 opacity-60;
+    }
+  }
+
+  .endpage {
+    @apply fixed inset-0 z-22 flex flex-col items-center justify-center gap-4 p-8 text-center;
+    background: color-mix(in srgb, var(--color-canvas) 92%, transparent);
+    backdrop-filter: blur(6px);
+    animation: pore-fade-in 0.25s ease-out;
+  }
+  .endpage__icon {
+    @apply flex size-14 items-center justify-center rounded-full border border-line bg-fg/5 text-2xl text-fg;
+    animation: pore-panel-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .endpage__title {
+    @apply text-2xl font-bold;
+  }
+  .endpage__subtitle {
+    @apply -mt-2 text-sm text-muted;
+  }
+  .endpage__actions {
+    @apply flex flex-wrap justify-center gap-2;
+  }
+  .endpage__actions button {
+    @apply rounded-[var(--radius-control)] border border-line bg-surface px-4 py-2 text-sm font-medium;
+  }
+  .endpage__actions button.primary {
+    @apply border-fg bg-fg text-canvas;
+  }
+  .endpage__menu {
+    @apply flex max-w-2xl flex-wrap justify-center gap-2 rounded-[var(--radius-panel)] border border-line bg-surface px-3 py-2.5;
+  }
+  .endpage__menu .home {
+    @apply self-center border-transparent bg-transparent font-bold;
+  }
+  .endpage__menu button {
+    @apply rounded-[var(--radius-control)] border border-line bg-surface px-3.5 py-1.5;
+  }
+
+  .toast {
+    @apply fixed left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full border border-line bg-fg px-3.5 py-2 text-[0.8rem] font-medium text-canvas shadow-[var(--shadow-popover)];
+    top: calc(0.75rem + env(safe-area-inset-top));
+    animation: pore-rise 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .toast button {
+    @apply rounded-[var(--radius-control)] border border-canvas/30 px-2 py-0.5 text-[0.75rem];
+  }
+
+  .footnote {
+    @apply fixed bottom-8 left-1/2 z-30 max-h-[40vh] w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 overflow-y-auto rounded-[var(--radius-panel)] border border-line bg-surface py-4 pr-8 pl-4 text-[0.9rem] text-fg shadow-[var(--shadow-panel)];
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    margin-bottom: env(safe-area-inset-bottom);
+  }
+  .footnote[data-state='open'] {
+    animation: pore-fade-in 0.16s ease-out;
+  }
+  .footnote__close {
+    @apply absolute top-1.5 right-2;
+  }
+
+  .dropzone {
+    @apply pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-[2px];
+    animation: pore-fade-in 0.15s ease-out;
+  }
+  .dropzone__card {
+    @apply flex flex-col items-center gap-2 rounded-[var(--radius-panel)] border-2 border-dashed border-white/50 px-12 py-10 text-center text-white;
+    animation: pore-panel-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .dropzone__icon {
+    @apply text-4xl;
+  }
+  .dropzone__title {
+    @apply text-xl font-semibold;
+  }
+  .dropzone__hint {
+    @apply text-sm text-white/70;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dropzone,
+    .dropzone__card {
+      animation: none;
+    }
+  }
+
+  .notice {
+    @apply fixed bottom-4 left-1/2 z-[60] max-w-[90vw] -translate-x-1/2 cursor-pointer rounded-full border border-line bg-fg px-4 py-2 text-center text-[0.8rem] break-all text-canvas shadow-[var(--shadow-popover)];
+  }
+
+  /* --- highlights (F2) ------------------------------------------------------ */
+  .selection-toolbar {
+    @apply fixed bottom-16 left-1/2 z-[58] flex max-w-[90vw] -translate-x-1/2 items-center gap-2 rounded-full border border-line bg-surface px-3 py-2 text-fg shadow-[var(--shadow-panel)];
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    animation: pore-panel-in 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .selection-toolbar__text {
+    @apply max-w-[16rem] truncate text-[0.8rem] text-muted italic;
+  }
+  .selection-toolbar__swatch {
+    @apply h-6 w-6 shrink-0 cursor-pointer rounded-full border border-fg/15;
+  }
+  .selection-toolbar__swatch:hover {
+    @apply scale-110;
+  }
+  .selection-toolbar__note,
+  .selection-toolbar__quote {
+    @apply h-6 w-6 shrink-0 cursor-pointer rounded-full border border-line bg-transparent text-[0.8rem] leading-none text-fg;
+  }
+  .selection-toolbar__note:hover,
+  .selection-toolbar__quote:hover {
+    @apply border-fg/40;
+  }
+
+  .highlights-panel {
+    @apply fixed top-[52px] right-3 z-[55] flex max-h-[60vh] w-[min(360px,calc(100vw-24px))] flex-col overflow-hidden rounded-[var(--radius-panel)] border border-line bg-surface text-fg shadow-[var(--shadow-panel)];
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    animation: pore-panel-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .highlights-panel--left {
+    @apply left-3 right-auto;
+  }
+  .highlights-panel__header {
+    @apply flex items-center justify-between border-b border-line px-3 py-2 text-[0.9rem] font-semibold;
+  }
+  .highlights-panel__body {
+    @apply overflow-y-auto p-1;
+  }
+  .highlights-panel__head-actions {
+    @apply flex items-center gap-1.5;
+  }
+  .bm-add {
+    @apply rounded-[var(--radius-control)] border border-line bg-canvas px-2 py-0.5 text-[0.72rem] font-medium text-fg hover:bg-fg/5;
+  }
+  .bm-add[aria-pressed='true'] {
+    @apply border-fg bg-fg text-canvas;
+  }
+
+  /* headless <BookmarksPanel> — data-pore-bm-* hooks */
+  [data-pore-bm-empty],
+  [data-pore-hl-empty] {
+    @apply p-6 text-center text-[0.85rem] leading-relaxed text-muted;
+  }
+  [data-pore-bm-list] {
+    @apply m-0 flex list-none flex-col gap-0.5 p-0;
+  }
+  [data-pore-bm-item] {
+    @apply flex items-center gap-1 rounded-[var(--radius-control)] px-1.5 hover:bg-fg/[0.03];
+  }
+  [data-pore-bm-jump] {
+    @apply flex flex-1 items-baseline justify-between gap-2 border-0 bg-transparent px-1 py-2 text-left text-[0.85rem] text-fg;
+  }
+  [data-pore-bm-jump]:hover [data-pore-bm-label] {
+    @apply underline;
+  }
+  [data-pore-bm-pct] {
+    @apply shrink-0 text-[0.72rem] text-muted [font-variant-numeric:tabular-nums];
+  }
+  [data-pore-bm-rename] {
+    @apply flex-1 rounded-[var(--radius-control)] border border-focus bg-canvas px-1.5 py-1 text-[0.85rem] text-fg outline-none;
+  }
+  [data-pore-bm-rename-btn],
+  [data-pore-bm-remove] {
+    @apply h-6 w-6 shrink-0 rounded-full border-0 bg-transparent text-[0.9rem] leading-none text-muted hover:bg-fg/5 hover:text-fg;
+  }
+  [data-pore-bm-remove]:hover {
+    @apply text-danger;
+  }
+
+  /* headless <HighlightsPanel> — data-pore-hl-* hooks */
+  [data-pore-hl-list] {
+    @apply m-0 flex list-none flex-col gap-1 p-0;
+  }
+  [data-pore-hl-item] {
+    @apply grid gap-2 rounded-[var(--radius-control)] p-2;
+    grid-template-columns: 1fr auto;
+  }
+  [data-pore-hl-item]:hover {
+    @apply bg-fg/[0.03];
+  }
+  [data-pore-hl-jump] {
+    @apply col-start-1 rounded-r-[var(--radius-control)] border-0 border-l-[3px] border-solid bg-transparent py-0.5 pl-2.5 text-left text-[0.85rem] leading-snug text-fg;
+  }
+  [data-pore-hl-jump]:hover {
+    @apply underline;
+  }
+  [data-pore-hl-remove] {
+    @apply col-start-2 row-start-1 h-6 w-6 shrink-0 self-start rounded-full border-0 bg-transparent text-[1rem] leading-none text-muted;
+  }
+  [data-pore-hl-remove]:hover {
+    @apply bg-fg/5 text-danger;
+  }
+  [data-pore-hl-colors] {
+    @apply col-span-2 flex gap-2 pl-2.5;
+  }
+  [data-pore-hl-swatch] {
+    @apply h-4 w-4 shrink-0 cursor-pointer rounded-full border border-fg/15 transition-transform hover:scale-110;
+  }
+  [data-pore-hl-swatch][aria-pressed='true'] {
+    @apply ring-2 ring-fg ring-offset-1 ring-offset-surface;
+  }
+  [data-pore-hl-note] {
+    @apply col-span-2 ml-2.5 resize-none rounded-[var(--radius-control)] border border-line bg-canvas p-2 text-[0.8rem] leading-snug text-fg placeholder:text-muted focus-visible:border-focus focus-visible:outline-none;
+  }
+}

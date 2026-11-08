@@ -100,7 +100,10 @@ export function parseCfi(cfi: string): ParsedCfi | null {
 }
 
 /** Resolve a parsed CFI to a `Range` covering one character, or `null` if the doc has drifted. */
-export function resolveCfiRange(doc: Document, parsed: Pick<ParsedCfi, 'steps' | 'offset'>): Range | null {
+export function resolveCfiRange(
+  doc: Document,
+  parsed: Pick<ParsedCfi, 'steps' | 'offset'>,
+): Range | null {
   const el = resolveCfiElement(doc, parsed.steps);
   if (!el) return null;
   return rangeAtOffsetInEl(el, doc, parsed.offset);

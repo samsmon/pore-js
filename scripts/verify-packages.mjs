@@ -43,12 +43,16 @@ for (const pkg of ['reader-core', 'reader-react']) {
   const dir = join(root, 'packages', pkg);
   const { version, name } = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'));
 
-  const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  const listing = execFileSync(npm, ['pack', '--dry-run', '--json'], {
-    cwd: dir,
-    encoding: 'utf8',
-    shell: process.platform === 'win32',
-  });
+  const listing =
+    process.platform === 'win32'
+      ? execFileSync('cmd.exe', ['/d', '/s', '/c', 'npm.cmd pack --dry-run --json'], {
+          cwd: dir,
+          encoding: 'utf8',
+        })
+      : execFileSync('npm', ['pack', '--dry-run', '--json'], {
+          cwd: dir,
+          encoding: 'utf8',
+        });
   const files = JSON.parse(listing)[0].files.map((f) => f.path);
   for (const f of files) {
     if (/\.map$|\.tsbuildinfo$|\.test\.|tsconfig|tsup\.config/.test(f)) {

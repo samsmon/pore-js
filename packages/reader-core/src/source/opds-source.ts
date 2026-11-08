@@ -1,9 +1,14 @@
 import { LocalFileSource } from './local-file-source.js';
-import { acquisitionLink, guessFilename, parseOpdsFeed, type OpdsEntry, type OpdsFeed } from './opds-parse.js';
+import {
+  acquisitionLink,
+  guessFilename,
+  parseOpdsFeed,
+  type OpdsEntry,
+  type OpdsFeed,
+} from './opds-parse.js';
 
 export type OpdsAuth =
-  | { type: 'basic'; username: string; password: string }
-  | { type: 'bearer'; token: string };
+  { type: 'basic'; username: string; password: string } | { type: 'bearer'; token: string };
 
 export interface OpdsSourceOptions {
   auth?: OpdsAuth;

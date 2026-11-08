@@ -13,7 +13,13 @@ describe('ReaderAnnouncer (A11Y-02)', () => {
   it('announces chapter, page number, and percent through book', async () => {
     vi.useFakeTimers();
     vi.spyOn(readerModule, 'useReaderProgress').mockReturnValue({
-      locator: { page: 4, total: 20, percent: 0.25, label: '', position: { type: 'page', value: 4, total: 20 } },
+      locator: {
+        page: 4,
+        total: 20,
+        percent: 0.25,
+        label: '',
+        position: { type: 'page', value: 4, total: 20 },
+      },
       percent: 0.25,
       chapterLabel: 'Prologue',
       chapterIndex: 0,

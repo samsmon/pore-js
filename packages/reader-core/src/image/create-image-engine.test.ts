@@ -205,8 +205,12 @@ describe('createImageEngine (paged-single)', () => {
     await engine.mount();
     const el = container.querySelector('.pore-image')!;
     // default gesture is 'handle' → a plain center tap does nothing
-    el.dispatchEvent(new PointerEvent('pointerdown', { clientX: 5, clientY: 5, pointerId: 1, bubbles: true }));
-    el.dispatchEvent(new PointerEvent('pointerup', { clientX: 5, clientY: 5, pointerId: 1, bubbles: true }));
+    el.dispatchEvent(
+      new PointerEvent('pointerdown', { clientX: 5, clientY: 5, pointerId: 1, bubbles: true }),
+    );
+    el.dispatchEvent(
+      new PointerEvent('pointerup', { clientX: 5, clientY: 5, pointerId: 1, bubbles: true }),
+    );
     expect(chrome).toHaveLength(0);
     const handle = container.querySelector('[data-pore-chrome-handle]') as HTMLElement;
     expect(handle).toBeTruthy();
@@ -262,7 +266,9 @@ describe('createImageEngine (paged-single)', () => {
     engine.on('reader:zoomchange', (e) => zoomEvents.push(e));
     await engine.mount();
     const poreImage = container.querySelector('.pore-image')!;
-    poreImage.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, ctrlKey: true, bubbles: true }));
+    poreImage.dispatchEvent(
+      new WheelEvent('wheel', { deltaY: -100, ctrlKey: true, bubbles: true }),
+    );
     poreImage.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
     expect(zoomEvents).toHaveLength(0);
     const viewport = container.querySelector('.pore-image__viewport') as HTMLElement;

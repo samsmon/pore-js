@@ -25,7 +25,7 @@ A high-performance, source-agnostic web reader engine for manga, EPUB, PDF, and 
 > Built for developers building digital libraries: a complete, headless reader engine that decouples content sources from rendering — you supply the data stream, Pore.js handles the canvas, viewport virtualization, text layout, and gesture physics.
 
 > [!NOTE]
-> **Release Status (v1.0.0-rc.2):** Latest release features dedicated mobile reader layout (bottom bar & bottom sheet drawers), zero-flicker instant manga page turns (atomic DOM swap + sync cache lookup), DOMPurify footnote security hardening, isolated multi-context state architecture, and granular subpath package exports.
+> **Release Status (v1.0.0-rc.3):** Latest release features dedicated mobile reader layout (bottom bar & bottom sheet drawers), zero-flicker instant manga page turns (atomic DOM swap + sync cache lookup), strict allowlist footnote security hardening, isolated multi-context state architecture, and granular subpath package exports.
 
 ---
 
@@ -69,9 +69,10 @@ flowchart TD
 ```
 
 The engine enforces strict architectural separation across four distinct boundaries:
+
 1. **Source Decoupling**: Data streams are ingested via abstract `ReaderSource` adapters (local files, OPDS, or remote servers) wrapped in a transparent caching layer.
 2. **Framework-Agnostic Core**: Canvas rendering, pagination calculations, EPUB spine parsing, and locator offsets operate independently of any UI framework.
-3. **Sandbox Isolation**: EPUB documents and untrusted markup execute inside a sandboxed iframe with strict Content Security Policy (`script-src 'none'`) and DOMPurify footnote sanitization.
+3. **Sandbox Isolation**: EPUB documents and untrusted markup execute inside a sandboxed iframe with strict Content Security Policy (`script-src 'none'`) and strict allowlist footnote sanitization.
 4. **Headless Presentation**: React 19 bindings emit zero bundled styles and partition state into 4 micro-contexts, preventing cascading re-renders across the component tree.
 
 ---
@@ -98,7 +99,7 @@ The engine enforces strict architectural separation across four distinct boundar
         <li><strong>Dedicated Mobile Layout</strong>: Compact top header, floating bottom navigation bar, ergonomic bottom sheet drawers for TOC/Settings, and safe-area insets.</li>
         <li><strong>Granular Subpath Exports</strong>: Direct imports (<code>porejs-react/reader</code>, <code>primitives</code>, <code>gsap</code>) for tree-shakeable integration without Radix bloat.</li>
         <li><strong>Zero Cascading Re-Renders</strong>: State partitioned into <code>PositionContext</code>, <code>ConfigContext</code>, <code>UIContext</code>, and <code>AnnotationsContext</code>.</li>
-        <li><strong>Security Hardening</strong>: DOMPurify footnote sanitization against Stored XSS and runtime schema validation for imported annotation bundles.</li>
+        <li><strong>Security Hardening</strong>: Strict allowlist footnote sanitization against Stored XSS and runtime schema validation for imported annotation bundles.</li>
         <li><strong>Offline Cache &amp; Resume</strong>: <code>CachedSource</code> v2 backed by IndexedDB and Cache API with byte-budgeted chapter preloading.</li>
         <li><strong>Text-to-Speech (TTS)</strong>: Sentence-level highlight synchronization and automatic page-turn via browser <code>SpeechSynthesis</code>.</li>
         <li><strong>Annotation Engine</strong>: CSS Custom Highlight API text highlights, notes, and portable <code>epubcfi</code> locators across devices.</li>
@@ -113,30 +114,31 @@ The engine enforces strict architectural separation across four distinct boundar
 
 Pore.js is maintained as a pnpm monorepo cleanly isolating core algorithms from frontend UI bindings:
 
-| Package | Directory | Role & Responsibility |
-|---|---|---|
-| `porejs` | `packages/reader-core` | Framework-agnostic reader core: sources, image/text/PDF engines, locator model, worker search |
-| `porejs-react` | `packages/reader-react` | React 19 headless primitives: `<Reader>`, micro-contexts, custom hooks, and UI controls |
-| `@pore/demo` | `apps/demo` | Public demo application showcasing mobile layout, dark mode, and synthetic fixtures |
-| `@pore/example-host-app` | `examples/host-app` | Minimal third-party embedding reference illustrating host integration |
+| Package                  | Directory               | Role & Responsibility                                                                         |
+| ------------------------ | ----------------------- | --------------------------------------------------------------------------------------------- |
+| `porejs`                 | `packages/reader-core`  | Framework-agnostic reader core: sources, image/text/PDF engines, locator model, worker search |
+| `porejs-react`           | `packages/reader-react` | React 19 headless primitives: `<Reader>`, micro-contexts, custom hooks, and UI controls       |
+| `@pore/demo`             | `apps/demo`             | Public demo application showcasing mobile layout, dark mode, and synthetic fixtures           |
+| `@pore/example-host-app` | `examples/host-app`     | Minimal third-party embedding reference illustrating host integration                         |
 
 ---
 
 ## Tech Stack & Workspace Matrix
 
-| Layer | Technology | Purpose |
-|---|---|---|
-| **Core Engine** | TypeScript 5.7+ | Strict type safety, engine algorithms, zero-dependency core architecture |
-| **UI Bindings** | React 19 | Headless components, compound micro-contexts, declarative reactive hooks |
-| **Text & PDF** | CSS Multi-Column / `pdfjs-dist` | Sandboxed EPUB reflow and canvas-based document rendering |
-| **Offline Storage** | IndexedDB + Cache API | Resilient progress checkpoints, blob storage, and offline media cache |
-| **Tooling & Test** | Vite 6 / tsup / Vitest / Playwright | Monorepo bundling, unit tests, and cross-browser e2e verification |
+| Layer               | Technology                          | Purpose                                                                  |
+| ------------------- | ----------------------------------- | ------------------------------------------------------------------------ |
+| **Core Engine**     | TypeScript 5.7+                     | Strict type safety, engine algorithms, zero-dependency core architecture |
+| **UI Bindings**     | React 19                            | Headless components, compound micro-contexts, declarative reactive hooks |
+| **Text & PDF**      | CSS Multi-Column / `pdfjs-dist`     | Sandboxed EPUB reflow and canvas-based document rendering                |
+| **Offline Storage** | IndexedDB + Cache API               | Resilient progress checkpoints, blob storage, and offline media cache    |
+| **Tooling & Test**  | Vite 6 / tsup / Vitest / Playwright | Monorepo bundling, unit tests, and cross-browser e2e verification        |
 
 ---
 
 ## Quick Start
 
 ### Prerequisites
+
 - **Node.js** >= 20.0.0
 - **pnpm** >= 9.0.0 (`corepack enable`)
 
@@ -235,14 +237,13 @@ export class CustomLibrarySource implements ReaderSource {
 
 Comprehensive technical specifications, design RFCs, and operational runbooks are maintained in the [`docs/`](docs/) directory:
 
-| Document | Scope & Focus | Target Audience |
-|---|---|---|
-| [Getting Started](docs/getting-started.md) | First steps, fixture creation, and local app configuration | New Developers |
-| [Architecture Guide](docs/architecture.md) | Internal engine mechanics, CSP sandboxing, and data lifecycles | System Architects |
-| [Integration Guide](docs/integration.md) | In-depth API reference for `ReaderSource`, hooks, and headless UI | Frontend Engineers |
-| [AI Agent Guide](docs/ai-agent-guide.md) | Monorepo invariants, automation rules, and development conventions | AI Coding Agents |
-| [Milestone 8 Plan](docs/m8-plan.md) | Hardening roadmap, API freeze checklist, and release gates | Core Contributors |
-| [Changelog](CHANGELOG.md) | Release history, breaking changes, and version notes | All Developers |
+| Document                                   | Scope & Focus                                                     | Target Audience    |
+| ------------------------------------------ | ----------------------------------------------------------------- | ------------------ |
+| [Getting Started](docs/getting-started.md) | First steps, fixture creation, and local app configuration        | New Developers     |
+| [Architecture Guide](docs/architecture.md) | Internal engine mechanics, CSP sandboxing, and data lifecycles    | System Architects  |
+| [Integration Guide](docs/integration.md)   | In-depth API reference for `ReaderSource`, hooks, and headless UI | Frontend Engineers |
+| [Milestone 8 Plan](docs/m8-plan.md)        | Hardening roadmap, API freeze checklist, and release gates        | Core Contributors  |
+| [Changelog](CHANGELOG.md)                  | Release history, breaking changes, and version notes              | All Developers     |
 
 ---
 

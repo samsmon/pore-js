@@ -31,7 +31,7 @@ against recorded response shapes (no live server in CI).
       `KavitaDownloadForbiddenError` (account needs the Download role)
 - [x] Progress: `GET /api/Reader/progress` → `{ type:'page' }` `Position`;
       `POST /api/Reader/progress` `{ pageNum, chapterId, seriesId, volumeId,
-      libraryId }` — `pageNum` derived from page / scroll / anchor positions
+libraryId }` — `pageNum` derived from page / scroll / anchor positions
 - [x] Retry/backoff on 429 + 5xx, `AbortSignal` passthrough
 - [x] Vitest (10, fake `fetch` with recorded shapes): manifest per format, image
       fetch (key + bearer), progress round-trip, scroll→pageNum, 401 refresh,
@@ -129,7 +129,7 @@ done 2026-08-29
 
 **RTL-horizontal (Arabic/Hebrew) — closed post-M3:** confirmed it needed no new
 code — `direction: rtl` in `buildBaseStylesheet` + the I4 key/click swap were
-already sufficient, since CSS multicol reverses column *fill order* within an
+already sufficient, since CSS multicol reverses column _fill order_ within an
 unchanged box, so the existing `translateX(-page·pageStep)` chunking still lands
 on the right page. Added `demo-rtl` (synthetic Arabic, `page-progression-direction:
 rtl`, `lang="ar"`, no vertical) + a Playwright spec (multicol direction, key

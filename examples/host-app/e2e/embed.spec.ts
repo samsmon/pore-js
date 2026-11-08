@@ -49,7 +49,7 @@ test('open a volume, read, resume through the host source', async ({ page }) => 
   expect(await page.title()).toBe(titleBefore);
 });
 
-test('a second book does not inherit the first book\'s state', async ({ page }) => {
+test("a second book does not inherit the first book's state", async ({ page }) => {
   await page.goto('/');
   await page.locator('button[data-book="tidepool-v1"]').click();
   await expect(page.locator('.pore-image img').first()).toBeVisible();
@@ -70,7 +70,10 @@ test('the reader ships no CSS of its own', async ({ page }) => {
   await page.locator('button[data-book="emberline-v1"]').click();
   await expect(page.locator('.pore-image').first()).toBeVisible();
   const sheets = await page.evaluate(() =>
-    [...document.styleSheets].map((s) => s.href).filter(Boolean).map(String),
+    [...document.styleSheets]
+      .map((s) => s.href)
+      .filter(Boolean)
+      .map(String),
   );
   // only the host's own bundle — nothing injected from porejs / porejs-react
   expect(sheets.every((h) => !/porejs/.test(h))).toBe(true);

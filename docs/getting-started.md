@@ -39,7 +39,7 @@ Add metadata if you have it — it drives the tab title and reading direction:
     author: 'Eiichiro Oda',
     volume: 108,
     chapter: 1074,
-    direction: 'rtl',          // manga; 'vertical' for tategaki
+    direction: 'rtl', // manga; 'vertical' for tategaki
   }}
 />
 ```
@@ -50,13 +50,15 @@ Add metadata if you have it — it drives the tab title and reading direction:
 <Book
   src={chapterUrl}
   meta={meta}
-  seriesId="one-piece"                       // keeps fit/zoom prefs across chapters
-  progress={savedPosition}                   // resume — a value from onProgress
-  onProgress={(pos) => saveToMyDb(pos)}      // persist it yourself
-  onEnd={({ kind }) => {                     // reached the end
+  seriesId="one-piece" // keeps fit/zoom prefs across chapters
+  progress={savedPosition} // resume — a value from onProgress
+  onProgress={(pos) => saveToMyDb(pos)} // persist it yourself
+  onEnd={({ kind }) => {
+    // reached the end
     if (kind === 'book') loadNextChapter();
   }}
-  fetch={(url, init) =>                      // CDN that needs auth / Referer
+  fetch={(url, init) =>
+    // CDN that needs auth / Referer
     fetch(url, { ...init, headers: { Referer: 'https://site' } })
   }
   className="reader"
@@ -70,16 +72,14 @@ add your own toolbar with the hooks (below) if you want one.
 ### Mobile
 
 The engines are touch-first: horizontal **swipe** turns the page (image and
-text), **pinch** zooms images, **double-tap** an image toggles fit ↔ 2× at the
-tap point, and the browser keeps vertical scroll (`touch-action`). Nothing to
+text), images stay locked at a clean 1.0 fit scale without accidental pan/zoom displacement, and the browser keeps vertical scroll (`touch-action`). Nothing to
 configure.
 
 For the menu, each engine renders a faint **chrome handle** — a small upward
 chevron pinned bottom-centre (`[data-pore-chrome-handle]`, respects
 `env(safe-area-inset-*)`) that fades while idle and toggles your chrome on tap.
 Change it with the `chromeGesture` setting (`'handle'` default, or
-`'tap-center'`, `'long-press'`, `'handle+long-press'`, `'none'`); disable
-double-tap zoom with `doubleTapZoom: false` (image settings).
+`'tap-center'`, `'long-press'`, `'handle+long-press'`, `'none'`).
 
 Give the host a real height that survives the mobile URL bar and notches:
 

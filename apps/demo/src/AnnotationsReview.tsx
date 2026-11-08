@@ -163,11 +163,7 @@ export function AnnotationsReview({
           >
             Export all
           </button>
-          <button
-            type="button"
-            className="review__tool"
-            onClick={() => fileRef.current?.click()}
-          >
+          <button type="button" className="review__tool" onClick={() => fileRef.current?.click()}>
             Import…
           </button>
           <input
@@ -191,8 +187,8 @@ export function AnnotationsReview({
         <div className="review__body">
           {total === 0 && (
             <p className="review__empty">
-              Nothing marked yet. Highlight a passage or drop a bookmark (<kbd>b</kbd>) and it
-              shows up here.
+              Nothing marked yet. Highlight a passage or drop a bookmark (<kbd>b</kbd>) and it shows
+              up here.
             </p>
           )}
 
@@ -208,9 +204,7 @@ export function AnnotationsReview({
                     type="button"
                     className="review__group-head"
                     aria-expanded={!isCollapsed}
-                    onClick={() =>
-                      setCollapsed((c) => ({ ...c, [g.entry.id]: !isCollapsed }))
-                    }
+                    onClick={() => setCollapsed((c) => ({ ...c, [g.entry.id]: !isCollapsed }))}
                   >
                     <span className="review__group-title">{g.entry.title}</span>
                     <span className="review__group-count">
@@ -220,9 +214,7 @@ export function AnnotationsReview({
                   <button
                     type="button"
                     className="review__group-export"
-                    onClick={() =>
-                      void exportBooks([g.entry.id], `${g.entry.id}-annotations.json`)
-                    }
+                    onClick={() => void exportBooks([g.entry.id], `${g.entry.id}-annotations.json`)}
                   >
                     Export
                   </button>

@@ -55,7 +55,7 @@ describe('LocalFileSource — dropped document', () => {
     const opf = `<?xml version="1.0"?><package xmlns:rendition="http://www.idpf.org/vocab/rendition/#">
       <metadata><meta property="rendition:layout">pre-paginated</meta></metadata></package>`;
     const zipped = zipSync({
-      'mimetype': new TextEncoder().encode('application/epub+zip'),
+      mimetype: new TextEncoder().encode('application/epub+zip'),
       'OEBPS/content.opf': new TextEncoder().encode(opf),
     });
     const file = new File([zipped], 'comic.epub');

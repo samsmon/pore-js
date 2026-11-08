@@ -1,12 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import {
-  elementSteps,
-  parseCfi,
-  resolveCfiElement,
-  resolveCfiRange,
-  serializeCfi,
-} from './cfi.js';
+import { elementSteps, parseCfi, resolveCfiElement, resolveCfiRange, serializeCfi } from './cfi.js';
 
 function docWith(bodyHtml: string): Document {
   return new DOMParser().parseFromString(`<html><body>${bodyHtml}</body></html>`, 'text/html');

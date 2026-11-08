@@ -3,7 +3,14 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { DEFAULT_KEYMAP, type ActionId, type ImageEngineSettings } from 'porejs';
 import { useReaderKeymap, useReaderKind, useReaderSettings } from './reader.js';
 import { TextSettingsPanel } from './text-settings-panel.js';
-import { Accordion, SelectField, SliderField, SwitchField, Tabs, type TabDef } from './primitives.js';
+import {
+  Accordion,
+  SelectField,
+  SliderField,
+  SwitchField,
+  Tabs,
+  type TabDef,
+} from './primitives.js';
 
 const ACTION_LABELS: Record<ActionId, string> = {
   'toggle-menu': 'Toggle menu',
@@ -281,7 +288,9 @@ function ImageSettingsPanel({
 
   const [tab, setTab] = useState('layout');
   if (layout === 'accordion') return <Accordion items={tabs} />;
-  return <Tabs tabs={tabs} value={tab} onValueChange={setTab} {...(trailing ? { trailing } : {})} />;
+  return (
+    <Tabs tabs={tabs} value={tab} onValueChange={setTab} {...(trailing ? { trailing } : {})} />
+  );
 }
 
 /**

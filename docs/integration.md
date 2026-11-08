@@ -36,15 +36,15 @@ Peer deps: `react` / `react-dom` ≥ 19 for the React package; `gsap` is an
 `ReaderSource` to implement, no `<ReaderProvider>`. Covers most manga /
 comics / book sites. See [`getting-started.md`](getting-started.md). Props:
 
-| prop | |
-|---|---|
-| `src` \| `pages` \| `file` | **one required** — archive URL / image-URL list / `File`\|`Blob` |
-| `meta` | `{ title, author, subtitle, volume, chapter, direction }` — tab title + reading direction |
-| `progress` / `onProgress` | resume value in / out (you persist it) |
-| `onEnd` | `({ kind: 'book' \| 'chapter', hasNext })` — load the next chapter |
-| `seriesId` | keep fit / zoom / direction prefs across chapters served as separate `<Book>`s |
-| `fetch` | swap the fetcher — add `Referer` / auth headers for a CDN |
-| `className` / `style` / `children` / `transitions` / `persistSettings` / `fontFaceCss` | passthrough to `<Reader>` |
+| prop                                                                                   |                                                                                           |
+| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `src` \| `pages` \| `file`                                                             | **one required** — archive URL / image-URL list / `File`\|`Blob`                          |
+| `meta`                                                                                 | `{ title, author, subtitle, volume, chapter, direction }` — tab title + reading direction |
+| `progress` / `onProgress`                                                              | resume value in / out (you persist it)                                                    |
+| `onEnd`                                                                                | `({ kind: 'book' \| 'chapter', hasNext })` — load the next chapter                        |
+| `seriesId`                                                                             | keep fit / zoom / direction prefs across chapters served as separate `<Book>`s            |
+| `fetch`                                                                                | swap the fetcher — add `Referer` / auth headers for a CDN                                 |
+| `className` / `style` / `children` / `transitions` / `persistSettings` / `fontFaceCss` | passthrough to `<Reader>`                                                                 |
 
 `createReaderSource(input)` (also from `porejs`, no React) is the same builder
 if you want the source object.
@@ -70,7 +70,7 @@ a content API, auth, routing. You want a reader without building one.
 
 **What stays yours:** authentication, the content API, app routing (which book
 is open, deep links), where reading progress / highlights are stored (your
-`ReaderSource` decides), and the page layout *around* the reader.
+`ReaderSource` decides), and the page layout _around_ the reader.
 
 `porejs` keeps to its box — engine input listeners are scoped to its own
 focused element (it won't eat your keyboard shortcuts), it declares no global
@@ -92,7 +92,7 @@ each into an `<iframe srcdoc>` and, before it does, `rewriteResources`:
   `<iframe>` / `<object>` / `<embed>` / `<meta http-equiv>`;
 - injects a strict frame CSP —
   `default-src 'none'; script-src 'none'; object-src 'none'; frame-src 'none';
-  base-uri 'none'; form-action 'none'` (images/fonts/styles limited to
+base-uri 'none'; form-action 'none'` (images/fonts/styles limited to
   `blob:`/`data:`; author styles are inline or blob-URL'd);
 - the frame's `sandbox` is `allow-same-origin allow-scripts` — `allow-scripts`
   **only** because WebKit/Safari delivers no input events without it; the CSP is
@@ -100,7 +100,7 @@ each into an `<iframe srcdoc>` and, before it does, `rewriteResources`:
   `allow-popups`, `allow-modals`, `allow-downloads`.
 
 **Net:** no author JavaScript runs, the frame can't navigate your page, and it
-can't reach the network. Publisher CSS *does* apply by default (turn it off with
+can't reach the network. Publisher CSS _does_ apply by default (turn it off with
 the `publisherStyles` setting).
 
 **For your own page**, a matching top-level CSP is fine — `porejs` needs
@@ -138,15 +138,15 @@ its own host `<div>` (give it `className` and size it — `flex: 1; min-height:
 
 ### `<Reader>` props
 
-| prop | type | notes |
-|---|---|---|
-| `bookId` | `string` | required. Changing it re-mounts the engine (`key` it in the demo). |
-| `className` | `string` | on the host div you must size |
-| `initialSettings` | `Partial<AnySettings>` | seed layout/typography for this book |
-| `onPositionChange` | `(loc: ReaderLocation) => void` | every location change |
-| `persistSettings` | `boolean \| SettingsPersistence` | `true` (localStorage) by default |
-| `transitions` | `ReaderTransitions` | page-turn/zoom animation seam; default instant. `gsapAdapter(gsap)` for smooth. |
-| `ref` | `Ref<ReaderHandle>` | imperative control — see §3 |
+| prop               | type                             | notes                                                                           |
+| ------------------ | -------------------------------- | ------------------------------------------------------------------------------- |
+| `bookId`           | `string`                         | required. Changing it re-mounts the engine (`key` it in the demo).              |
+| `className`        | `string`                         | on the host div you must size                                                   |
+| `initialSettings`  | `Partial<AnySettings>`           | seed layout/typography for this book                                            |
+| `onPositionChange` | `(loc: ReaderLocation) => void`  | every location change                                                           |
+| `persistSettings`  | `boolean \| SettingsPersistence` | `true` (localStorage) by default                                                |
+| `transitions`      | `ReaderTransitions`              | page-turn/zoom animation seam; default instant. `gsapAdapter(gsap)` for smooth. |
+| `ref`              | `Ref<ReaderHandle>`              | imperative control — see §3                                                     |
 
 ---
 
@@ -158,7 +158,7 @@ A source is any object implementing `ReaderSource`:
 interface ReaderSource {
   getManifest(bookId: string): Promise<Manifest>;
   getPage(bookId: string, index: number, opts?): Promise<Blob | string>;
-  getFile(bookId: string, opts?): Promise<Blob>;          // whole EPUB/PDF/CBZ
+  getFile(bookId: string, opts?): Promise<Blob>; // whole EPUB/PDF/CBZ
   loadProgress(bookId: string): Promise<Position | null>;
   saveProgress(bookId: string, p: Position): Promise<void>;
   // optional — annotation persistence
@@ -181,14 +181,14 @@ formats; `getPage` returns per-page blobs/URLs for image books.
 
 ### Built-in sources
 
-| source | use |
-|---|---|
-| `new DemoSource()` | bundled fixtures, zero backend |
-| `new LocalFileSource(files)` | a `File[]` / `FileList` the user dropped — `.epub`, `.pdf`, `.cbz`/`.zip`, or loose images. Detects the type. |
-| `new CachedSource(inner, opts?)` | wraps any source: local-first manifests + resume + `MediaCache` full-book download for offline. Implements `loadHighlights`/`saveHighlights` **and `loadBookmarks`/`saveBookmarks`** (local-first). Use `useDownload()` for the download UI. |
-| `new KavitaSource(opts)` | a live [Kavita](https://kavitareader.com) server (HTTP, bearer auth) |
-| `new OpdsSource(url, opts?)` | a read-only OPDS 1.2 catalog. `.acquire(entry)` → a `LocalFileSource` for the picked book. |
-| `new PdfImageSource(inner, opts?)` | used internally by the PDF engine; you rarely construct it |
+| source                             | use                                                                                                                                                                                                                                          |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `new DemoSource()`                 | bundled fixtures, zero backend                                                                                                                                                                                                               |
+| `new LocalFileSource(files)`       | a `File[]` / `FileList` the user dropped — `.epub`, `.pdf`, `.cbz`/`.zip`, or loose images. Detects the type.                                                                                                                                |
+| `new CachedSource(inner, opts?)`   | wraps any source: local-first manifests + resume + `MediaCache` full-book download for offline. Implements `loadHighlights`/`saveHighlights` **and `loadBookmarks`/`saveBookmarks`** (local-first). Use `useDownload()` for the download UI. |
+| `new KavitaSource(opts)`           | a live [Kavita](https://kavitareader.com) server (HTTP, bearer auth)                                                                                                                                                                         |
+| `new OpdsSource(url, opts?)`       | a read-only OPDS 1.2 catalog. `.acquire(entry)` → a `LocalFileSource` for the picked book.                                                                                                                                                   |
+| `new PdfImageSource(inner, opts?)` | used internally by the PDF engine; you rarely construct it                                                                                                                                                                                   |
 
 ### A custom source
 
@@ -196,7 +196,10 @@ formats; `getPage` returns per-page blobs/URLs for image books.
 import type { ReaderSource, Manifest, Position } from 'porejs';
 
 export class MyApiSource implements ReaderSource {
-  constructor(private baseUrl: string, private token: string) {}
+  constructor(
+    private baseUrl: string,
+    private token: string,
+  ) {}
 
   async getManifest(bookId: string): Promise<Manifest> {
     const r = await fetch(`${this.baseUrl}/books/${bookId}`, this.#auth());
@@ -207,18 +210,24 @@ export class MyApiSource implements ReaderSource {
   getFile(bookId: string) {
     return fetch(`${this.baseUrl}/books/${bookId}/file`, this.#auth()).then((r) => r.blob());
   }
-  getPage() { return Promise.reject(new Error('text only')); }
+  getPage() {
+    return Promise.reject(new Error('text only'));
+  }
   async loadProgress(bookId: string): Promise<Position | null> {
     const r = await fetch(`${this.baseUrl}/books/${bookId}/position`, this.#auth());
     return r.ok ? r.json() : null;
   }
   async saveProgress(bookId: string, p: Position) {
     await fetch(`${this.baseUrl}/books/${bookId}/position`, {
-      ...this.#auth(), method: 'PUT', body: JSON.stringify(p),
+      ...this.#auth(),
+      method: 'PUT',
+      body: JSON.stringify(p),
     });
   }
   // optional: loadHighlights / saveHighlights for cross-device annotations
-  #auth() { return { headers: { authorization: `Bearer ${this.token}` } }; }
+  #auth() {
+    return { headers: { authorization: `Bearer ${this.token}` } };
+  }
 }
 ```
 
@@ -256,30 +265,30 @@ never plays).
 
 ## 4. Hooks (must be used inside `<Reader>`)
 
-| hook | returns |
-|---|---|
-| `useReader()` | the `ReaderHandle` |
-| `useReaderKind()` | `'text' \| 'image'` (PDF reports `'image'`) |
-| `useReaderManifest()` | the book's `Manifest` (`title`, `subtitle?`, `volume?`, type, …) — `null` until loaded |
-| `useReaderLocation()` | `ReaderLocation` — page, total, percent, label, chapter |
-| `useReaderProgress()` | `{ page, total, percent, … }` |
-| `useReaderChapters()` | `Chapter[]` |
-| `useTableOfContents()` | `TocEntry[]` (nested) |
-| `useReaderSettings<T>()` | `[settings, setSettings]` |
-| `useReaderKeymap()` | `[keymap, setKeymap]` |
-| `useReaderSearch()` | `{ query, setQuery, hits, activeIndex, go, next, prev, clear, busy }` |
-| `useReaderHighlights()` | `HighlightRecord[]` |
-| `useBookmarks()` | `{ bookmarks, isBookmarkedHere, supported, add(label?), remove(id), rename(id, label), goTo(bm), toggle() }` — over the handle + `source.load/saveBookmarks` |
-| `useReaderSelection()` | `{ selection, highlight(opts), removeHighlight(id), updateHighlight(id, patch) }` |
-| `useTts()` | `{ state, play, pause, resume, stop, setRate, setVoice, listVoices }` |
-| `useFootnote()` | the footnote/endnote currently opened by a link tap |
-| `useEndPage()` | end-of-chapter / end-of-book card state |
-| `useReaderLoading()` | set of loading page/spine ids (for skeletons) |
-| `useReaderError()` | last engine error |
-| `useResumedFromPage()` | page number if the session was resumed (for a toast) |
-| `useChromeVisible()` | engine's own chrome-visibility signal (tap-to-toggle) |
-| `useReaderHistory(opts?)` | reflects position into `document.title` (and the URL in `mode: 'url-and-title'`) — see below |
-| `useDownload()` | `{ status, progress, download, remove }` (needs a `CachedSource`) |
+| hook                      | returns                                                                                                                                                      |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `useReader()`             | the `ReaderHandle`                                                                                                                                           |
+| `useReaderKind()`         | `'text' \| 'image'` (PDF reports `'image'`)                                                                                                                  |
+| `useReaderManifest()`     | the book's `Manifest` (`title`, `subtitle?`, `volume?`, type, …) — `null` until loaded                                                                       |
+| `useReaderLocation()`     | `ReaderLocation` — page, total, percent, label, chapter                                                                                                      |
+| `useReaderProgress()`     | `{ page, total, percent, … }`                                                                                                                                |
+| `useReaderChapters()`     | `Chapter[]`                                                                                                                                                  |
+| `useTableOfContents()`    | `TocEntry[]` (nested)                                                                                                                                        |
+| `useReaderSettings<T>()`  | `[settings, setSettings]`                                                                                                                                    |
+| `useReaderKeymap()`       | `[keymap, setKeymap]`                                                                                                                                        |
+| `useReaderSearch()`       | `{ query, setQuery, hits, activeIndex, go, next, prev, clear, busy }`                                                                                        |
+| `useReaderHighlights()`   | `HighlightRecord[]`                                                                                                                                          |
+| `useBookmarks()`          | `{ bookmarks, isBookmarkedHere, supported, add(label?), remove(id), rename(id, label), goTo(bm), toggle() }` — over the handle + `source.load/saveBookmarks` |
+| `useReaderSelection()`    | `{ selection, highlight(opts), removeHighlight(id), updateHighlight(id, patch) }`                                                                            |
+| `useTts()`                | `{ state, play, pause, resume, stop, setRate, setVoice, listVoices }`                                                                                        |
+| `useFootnote()`           | the footnote/endnote currently opened by a link tap                                                                                                          |
+| `useEndPage()`            | end-of-chapter / end-of-book card state                                                                                                                      |
+| `useReaderLoading()`      | set of loading page/spine ids (for skeletons)                                                                                                                |
+| `useReaderError()`        | last engine error                                                                                                                                            |
+| `useResumedFromPage()`    | page number if the session was resumed (for a toast)                                                                                                         |
+| `useChromeVisible()`      | engine's own chrome-visibility signal (tap-to-toggle)                                                                                                        |
+| `useReaderHistory(opts?)` | reflects position into `document.title` (and the URL in `mode: 'url-and-title'`) — see below                                                                 |
+| `useDownload()`           | `{ status, progress, download, remove }` (needs a `CachedSource`)                                                                                            |
 
 ### `useReaderHistory` — the tab title
 
@@ -305,16 +314,16 @@ when your app framework owns the title.
 
 All render `data-pore-*` markup + Radix; you style them.
 
-| component | what |
-|---|---|
-| `<SettingsPanel open onOpenChange extraTabs?>` | Radix Dialog with the typography/theme/navigation tabs. `extraTabs` appends your own (`TabDef[]`). |
-| `<SettingsPanelBody>` | the tabs without the dialog shell |
-| `<TableOfContents className? placeholder?>` | a native `<select>` bound to `goToHref` (`data-pore-toc`) |
-| `<HighlightsPanel className? colors? emptyLabel? onJump? previewChars?>` | editable list — jump / recolour / note textarea / remove (`data-pore-hl-*`) |
-| `<BookmarksPanel className? onJump? emptyLabel?>` | list — jump / inline rename / remove (`data-pore-bm-*`). Renders `null` when the source has no bookmark methods. |
-| `<FootnotePopover>` | renders the footnote a link opened |
-| `<ReaderScrubber>` | bottom seek bar with chapter ticks |
-| `<ReaderAnnouncer>` | visually-hidden ARIA live region — mount once inside `<Reader>` |
+| component                                                                | what                                                                                                             |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `<SettingsPanel open onOpenChange extraTabs?>`                           | Radix Dialog with the typography/theme/navigation tabs. `extraTabs` appends your own (`TabDef[]`).               |
+| `<SettingsPanelBody>`                                                    | the tabs without the dialog shell                                                                                |
+| `<TableOfContents className? placeholder?>`                              | a native `<select>` bound to `goToHref` (`data-pore-toc`)                                                        |
+| `<HighlightsPanel className? colors? emptyLabel? onJump? previewChars?>` | editable list — jump / recolour / note textarea / remove (`data-pore-hl-*`)                                      |
+| `<BookmarksPanel className? onJump? emptyLabel?>`                        | list — jump / inline rename / remove (`data-pore-bm-*`). Renders `null` when the source has no bookmark methods. |
+| `<FootnotePopover>`                                                      | renders the footnote a link opened                                                                               |
+| `<ReaderScrubber>`                                                       | bottom seek bar with chapter ticks                                                                               |
+| `<ReaderAnnouncer>`                                                      | visually-hidden ARIA live region — mount once inside `<Reader>`                                                  |
 
 See `apps/demo/src/Chrome.tsx` for a full chrome assembled from these +
 `apps/demo/src/styles.css` for the styling.
@@ -335,7 +344,7 @@ disable or your own `SettingsPersistence` (`createSettingsPersistence`).
 ```tsx
 import gsap from 'gsap';
 import { gsapAdapter } from 'porejs-react';
-<Reader transitions={gsapAdapter(gsap)} />
+<Reader transitions={gsapAdapter(gsap)} />;
 ```
 
 Without it, page turns / zoom / scroll are instant. The adapter is
@@ -361,13 +370,13 @@ setPdfWorkerSrc(pdfWorkerUrl);
 (`pdf/parse.ts`). Vite / webpack / Rollup / esbuild all code-split that into a
 lazy chunk by default, so:
 
-| you import | up-front cost (brotli) |
-|---|---|
-| `createTextEngine` + sources | ~18 kB |
-| `createImageEngine` + sources | ~12 kB |
-| all three engines + every source | ~30 kB (pdf.js **not** counted) |
-| pdf.js itself | ~130 kB — loads the first time a PDF opens |
-| `porejs-react` (`Reader` + hooks, `react`/`porejs` external) | ~2 kB |
+| you import                                                   | up-front cost (brotli)                     |
+| ------------------------------------------------------------ | ------------------------------------------ |
+| `createTextEngine` + sources                                 | ~18 kB                                     |
+| `createImageEngine` + sources                                | ~12 kB                                     |
+| all three engines + every source                             | ~30 kB (pdf.js **not** counted)            |
+| pdf.js itself                                                | ~130 kB — loads the first time a PDF opens |
+| `porejs-react` (`Reader` + hooks, `react`/`porejs` external) | ~2 kB                                      |
 
 These are `size-limit` budgets checked in CI (`.size-limit.json`,
 `pnpm size`) — a regression fails the build. If your bundler is configured to
@@ -383,7 +392,9 @@ in a bundle that never shows PDFs.
 import { createTextEngine } from 'porejs';
 
 const engine = createTextEngine({ container, source, bookId, settings });
-const off = engine.on('reader:locationchange', (loc) => { /* … */ });
+const off = engine.on('reader:locationchange', (loc) => {
+  /* … */
+});
 await engine.mount();
 engine.turn('forward');
 // engine.goto / setSettings / search / getCfi / addHighlight / on / destroy

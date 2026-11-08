@@ -12,6 +12,10 @@ self.addEventListener('message', (ev: MessageEvent<SearchRequest>) => {
     index = buildSearchIndex(msg.sections);
     post({ type: 'built' });
   } else if (msg.type === 'query') {
-    post({ type: 'result', id: msg.id, hits: index ? querySearchIndex(index, msg.query, msg.opts) : [] });
+    post({
+      type: 'result',
+      id: msg.id,
+      hits: index ? querySearchIndex(index, msg.query, msg.opts) : [],
+    });
   }
 });

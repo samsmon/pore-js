@@ -38,7 +38,7 @@ above, or changing a method signature, is **major**.
   controller internals. Opt-in deep import for people extending or
   re-implementing an engine. **May change in any minor release.**
 - **Type-only exports** are not pinned by the runtime surface test. They are
-  reviewed by hand against this document; treat a type whose *shape* changes
+  reviewed by hand against this document; treat a type whose _shape_ changes
   incompatibly as a breaking change even though the guard test won't catch it.
 - **CSS / visual output.** `porejs-react` ships no styles; the demo's
   `apps/demo/src/styles.css` is an example, not an API. The text engine's

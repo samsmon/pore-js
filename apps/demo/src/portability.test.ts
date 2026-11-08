@@ -15,7 +15,7 @@ const hl = (id: string) => ({
   color: '#ff0',
   text: `quote ${id}`,
   createdAt: 1,
-  range: {} as never,
+  range: { spine: 0, startBlock: 0, startOffset: 0, endBlock: 0, endOffset: 5 },
   cfi: { start: 'epubcfi(/2)', end: 'epubcfi(/4)' },
 });
 const bm = (id: string) => ({
@@ -110,7 +110,18 @@ describe('portability', () => {
 
       // Malicious or corrupt highlights
       expect(isValidHighlight({ ...validText, id: '' })).toBe(false);
-      expect(isValidHighlight({ ...validText, cfi: { start: 'bad-cfi', end: 'epubcfi(/2)' } })).toBe(false);
+      expect(isValidHighlight({ ...validText, color: 'yellow; } body { display: none' })).toBe(
+        false,
+      );
+      expect(
+        isValidHighlight({
+          ...validText,
+          range: { spine: -1, startBlock: 0, startOffset: 0, endBlock: 0, endOffset: 1 },
+        }),
+      ).toBe(false);
+      expect(
+        isValidHighlight({ ...validText, cfi: { start: 'bad-cfi', end: 'epubcfi(/2)' } }),
+      ).toBe(false);
       expect(isValidHighlight({ ...validText, createdAt: NaN })).toBe(false);
       expect(isValidHighlight({ ...validRect, page: -1 })).toBe(false);
       expect(isValidHighlight({ ...validRect, rects: [{ x: 'bad' }] })).toBe(false);

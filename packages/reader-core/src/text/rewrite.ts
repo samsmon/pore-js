@@ -105,6 +105,11 @@ export function rewriteResources(
     const url = v ? toBlobUrl(v) : null;
     if (url) el.setAttribute('href', url);
   }
+  for (const el of Array.from(root.querySelectorAll('image, use'))) {
+    const v = el.getAttribute('xlink:href');
+    const url = v ? toBlobUrl(v) : null;
+    if (url) el.setAttribute('xlink:href', url);
+  }
   for (const style of Array.from(root.querySelectorAll('style'))) {
     if (style.textContent) {
       style.textContent = rewriteCssUrls(style.textContent, baseDir, book, urls, cache);

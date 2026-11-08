@@ -11,7 +11,7 @@ visibly. Still self-contained, still no backend.
 "Position tracking that round-trips across devices"), §5 (Position / CFI), §7
 (selection) · builds on `v0.9.0-editorial`. Target tag: `v0.10.0-library`.
 
-**Scope boundary.** New *optional* `ReaderSource` methods
+**Scope boundary.** New _optional_ `ReaderSource` methods
 (`loadBookmarks?` / `saveBookmarks?`), one new engine method (`goToCfi`), and
 new headless `reader-react` components — all additive. The library, the
 annotations view, and export/import live in `apps/demo` (a demo-level
@@ -21,6 +21,7 @@ couldn't fulfil for a non-caching source.
 Sequential, one commit per task.
 
 **Open questions — decided (2026-09-06):**
+
 1. Bookmarks → a **`reader-react` layer** (`useBookmarks` over `getCfi` /
    `goToCfi` / the source). `reader-core` gets `goToCfi` (L0) and nothing else.
 2. Library → a **demo-level `useLibrary()`** over its own IndexedDB store.
@@ -61,7 +62,7 @@ reorder. `L3` needs L1 + the existing highlights. `L4` needs L1 + a schema.
       current spine) resolves the element via `resolveCfiElement`, walks up to
       the nearest block, and hands a `pendingAnchor` to the normal anchor path.
 - [x] **`Bookmark` type** in `source/types.ts` (`{ id, position, cfi?, label,
-      text?, createdAt }`), exported from both packages.
+text?, createdAt }`), exported from both packages.
 - [x] **Optional `ReaderSource.loadBookmarks?` / `saveBookmarks?`**;
       `CachedSource` implements both local-first (mirrors the highlights
       pattern, `#bmKey`).
@@ -90,7 +91,7 @@ turn away, jump back, survives reload.
 Manual, named bookmarks — distinct from the single auto-resume checkpoint.
 
 - [ ] **`reader-react` `useBookmarks()`**: `{ bookmarks, add(label?),
-      remove(id), goTo(bookmark) }`. `add()` snapshots the current
+remove(id), goTo(bookmark) }`. `add()` snapshots the current
       `Position` + `getCfi()` + a short `text` label from the location; writes
       through `source.saveBookmarks`. `goTo()` prefers `goToCfi` when there's a
       cfi, else `goto(position)`. Lives in `reader-react` over the handle + the
@@ -98,8 +99,8 @@ Manual, named bookmarks — distinct from the single auto-resume checkpoint.
 - [ ] **Headless `<BookmarksPanel>`** (like `<HighlightsPanel>`): `<ol>` with
       `data-pore-bm-*` hooks — jump / rename (inline) / remove. Renders nothing
       on a source without `loadBookmarks`.
-- [ ] **Demo**: a bookmark toggle in the rail (adds/removes a bookmark *at the
-      current page* — filled when the current page is bookmarked), the panel,
+- [ ] **Demo**: a bookmark toggle in the rail (adds/removes a bookmark _at the
+      current page_ — filled when the current page is bookmarked), the panel,
       and a keybinding (`b`).
 - [ ] Vitest: `useBookmarks` add/remove/goTo round-trip. Playwright: add a
       bookmark, turn pages, jump back to it, reload — it's still there.
@@ -118,9 +119,9 @@ The demo's landing becomes a home screen with a shelf of what you've read.
 - [x] **`useLibrary()` in the demo** (`apps/demo/src/use-library.ts`) — over
       IndexedDB (`openKvStore` from `porejs`, one key
       `pore:demo:library` → `LibraryEntry[]`). `{ id; title; glyph; kind:
-      'sample' | 'file'; lastOpened; percent }`. `record()` on open (creates /
+'sample' | 'file'; lastOpened; percent }`. `record()` on open (creates /
       bumps, keeps prior `percent`), `setProgress()` from `<Reader
-      onPositionChange>` (dead-zoned 0.5%), `remove()`. Capped at 24, newest
+onPositionChange>` (dead-zoned 0.5%), `remove()`. Capped at 24, newest
       first.
 - [x] **"Continue reading"** section on `<Landing>` (above "Open your own"):
       each row = `<Glyph>` + title + `"42% · 3 min ago"` + a thin progress
@@ -173,12 +174,12 @@ Portable, versioned, documented.
 
 - [x] **[`docs/portability-format.md`](portability-format.md)** — the versioned
       JSON schema (`{ format: "pore.js/annotations", version: 1, exportedAt,
-      books: [{ id, title, position?, highlights, bookmarks }] }`), validation
+books: [{ id, title, position?, highlights, bookmarks }] }`), validation
       rules, and merge semantics.
 - [x] **`apps/demo/src/portability.ts`** — pure `buildBundle` /
       `validateBundle` / `mergeBundle` (by `id`, at book + record level, skip on
       id clash unless `overwrite`, returns a `{ books, highlights, bookmarks,
-      skipped }` report) + `downloadBundle` (Blob + object URL). Unit-tested in
+skipped }` report) + `downloadBundle` (Blob + object URL). Unit-tested in
       `portability.test.ts` (5 cases incl. a full round-trip). The demo project
       is now in `vitest.workspace.ts`.
 - [x] **Export / Import** in the annotations review: an "Export all" + "Import…"
@@ -198,7 +199,7 @@ via a file, and the CFIs still resolve after re-pagination.
 Cash in the CFI work.
 
 - [x] **`apps/demo/src/share.ts`** — `deepLink(bookId, cfi)` (`…/?book=<id>&cfi=
-      <epubcfi>`, strips other params), `citation(quote, locator, link)`,
+<epubcfi>`, strips other params), `citation(quote, locator, link)`,
       `copyText`.
 - [x] **"Copy quote"** (`❝`) on the selection toolbar → clipboard gets
       `"<passage>"\n<Ch n/m> · <link>`. The rail's link button now copies a
@@ -228,8 +229,7 @@ there.
 - [x] `docs/integration.md` + `docs/architecture.md` updated (source methods,
       `goToCfi` / `resolvePendingCfi`, `<BookmarksPanel>`, `useBookmarks`,
       portability).
-- [x] `CHANGELOG.md` `v0.10.0-library`; `README.md` status + milestone list;
-      `CLAUDE.md`; `docs/agent-worklog.md`.
+- [x] `CHANGELOG.md` `v0.10.0-library`; `README.md` status + milestone list.
 - [x] Removing a shelf entry frees the offline copy (`removeDownload`);
       annotations kept on purpose (recoverable value — diverges from the
       original "also clear the stores" note).

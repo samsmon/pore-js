@@ -26,12 +26,7 @@ export interface ReaderTransitions {
   /** Apply a zoom / pan transform string to `el`. */
   zoom(el: HTMLElement, transform: string, reduced: boolean): void;
   /** Move `el[prop]` (a scroll offset) to `to`. */
-  scrollTo(
-    el: HTMLElement,
-    prop: 'scrollTop' | 'scrollLeft',
-    to: number,
-    reduced: boolean,
-  ): void;
+  scrollTo(el: HTMLElement, prop: 'scrollTop' | 'scrollLeft', to: number, reduced: boolean): void;
   /** Kill any in-flight animation — called on rapid input so nothing queues. */
   cancel(): void;
 }

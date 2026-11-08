@@ -120,7 +120,7 @@ still loads under the chunked build).
 
 - [x] **`examples/host-app/`** ("Inkwell") — a standalone Vite app: a fake manga
       library grid → clicking a volume mounts `<Reader>`. Its `LibrarySource`
-      *fully* implements `ReaderSource` over the example's own catalog
+      _fully_ implements `ReaderSource` over the example's own catalog
       (`getManifest` maps the host record → `ImageManifest` with `volume` /
       `subtitle`; `getPage` returns generated SVG; `loadProgress` /
       `saveProgress` use `localStorage` under the host's **own** `inkwell:*`
@@ -163,14 +163,14 @@ highlights, bookmarks, search, TTS — without building any of it.
 - [ ] **`examples/host-app/`** — a standalone minimal app (NOT the demo, no
       `apps/demo` chrome): a fake "library" page (grid of series) where
       clicking one mounts `<Reader>` in a panel. Its `ReaderSource` pulls from
-      the example's *own* (fake) REST-ish API — `getManifest` / `getPage` /
+      the example's _own_ (fake) REST-ish API — `getManifest` / `getPage` /
       `getFile` / `loadProgress` / `saveProgress` + optional
       `loadHighlights` / `loadBookmarks`. Proves: implement one interface, get
       a reader.
 - [ ] **Isolation audit + fixes:**
   - `porejs-react` ships zero CSS; the headless components carry only
     `data-pore-*` hooks. ✓ (assert in H1) — verify nothing leaks global styles.
-  - the text engine's `<iframe sandbox>` keeps publisher CSS *inside*.
+  - the text engine's `<iframe sandbox>` keeps publisher CSS _inside_.
   - **engine input listeners are scoped to its own focused root**, never
     `document` / `window` — an embedded reader must not eat the host's
     keyboard shortcuts or scroll when it doesn't have focus. Audit
@@ -220,12 +220,12 @@ the reader provably doesn't reach outside its own box. ✓
       doc · `SearchController` builds over the real text. (Full pagination stays
       on the e2e suites — jsdom can't run the iframe.)
 - [x] **3 real books pinned** (owner approved the download): Gutenberg
-      *Frankenstein* #84 (illustrated EPUB3), *Alice* #11 (illustrated),
-      *Pride and Prejudice* #1342 (long, no-images). **9 tests green — no
+      _Frankenstein_ #84 (illustrated EPUB3), _Alice_ #11 (illustrated),
+      _Pride and Prejudice_ #1342 (long, no-images). **9 tests green — no
       engine bug in the parse/CFI/search layer against real content.**
 - [x] `test/corpus/README.md` + provenance; **CI `corpus` job** fetches
       (cached on `sources.json` hash) + runs `pnpm test:corpus`.
-- [ ] *Grow the set later:* an RTL manga CBZ, a vertical-JP book, a real
+- [ ] _Grow the set later:_ an RTL manga CBZ, a vertical-JP book, a real
       fixed-layout EPUB, an ≥ 800-page item, a messy/scanned PDF (Gutenberg
       has no reliable PDF URL — needs another source). Not blocking `1.0`.
 
@@ -288,10 +288,10 @@ error card.
       stubs `navigator.clipboard` (Playwright WebKit has no `clipboard-*`
       permission). **Chromium 44/44 + WebKit 43/43 (TTS skipped) green,
       repeated runs.**
-- [ ] *Firefox:* config'd + on CI, but **can't launch on this Windows box**
+- [ ] _Firefox:_ config'd + on CI, but **can't launch on this Windows box**
       (`browserType.launch: spawn UNKNOWN` — an AV / MOTW quarantine thing).
       Verified via CI. Owner can `pnpm --filter @pore/demo exec playwright
-      install firefox` + unblock if they want it locally.
+install firefox` + unblock if they want it locally.
 
 **Done when:** the full e2e suite passes on all three engines. ✓ (Firefox on CI)
 
@@ -337,7 +337,7 @@ error card.
       `Chrome.tsx` — the demo panels are plain divs, not Radix dialogs), the
       reading surface turns pages from the keyboard.
 - [x] **`forced-colors` (Windows High Contrast)** — a `@media (forced-colors:
-      active)` block (system-colour borders, `Highlight` focus ring + active
+active)` block (system-colour borders, `Highlight` focus ring + active
       states; the text engine already drops to flow mode); e2e emulates it and
       re-runs axe (minus `color-contrast`, a false positive there).
 - [x] **Broadened axe** — `expectAxeClean` helper now runs `wcag2a/aa` **+
@@ -362,7 +362,7 @@ can do everything the demo offers. ✓ (SR pass pending)
       Provenance via `publishConfig.provenance` + `id-token: write`. On a real
       publish it also logs in to GHCR and builds + pushes the demo image.
 - [x] **`docs/releasing.md`** — the flow, the `rc → 1.0.0` step, the auth
-      one-time (`NPM_TOKEN` secret *or* npm Trusted Publishing), branch
+      one-time (`NPM_TOKEN` secret _or_ npm Trusted Publishing), branch
       protection recommendation.
 - [x] Job is **gated on repo variable `RELEASE_ENABLED=true`** — safe to merge,
       does nothing until the owner flips it + adds the token.
@@ -390,8 +390,8 @@ dogfooding first. Local consumption via `pnpm pack:local` →
 - [x] `release.yml` builds + pushes `ghcr.io/srytmj/porejs-demo:{latest,<sha>}`
       on a real publish; CI `docker` job builds it (no push) on every PR.
 - [ ] **Installable PWA** — `manifest.webmanifest` + icons + `theme-color`.
-      *(deferred — the demo already has `sw.js`; the manifest + icons are a
-      small follow-up, tracked in `known-issues.md`, not `1.0`-blocking.)*
+      _(deferred — the demo already has `sw.js`; the manifest + icons are a
+      small follow-up, tracked in `known-issues.md`, not `1.0`-blocking.)_
 - [ ] **Owner:** GHCR package public, reverse proxy + TLS for
       `pore.suryatmaja.dev`, DNS / tunnel, `docker compose up`. Checklist in
       `docs/deploy.md`.

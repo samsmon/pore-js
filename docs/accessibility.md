@@ -10,15 +10,15 @@ Every reader action is reachable without a pointer. The engine binds keys on its
 `document` — an embedded reader doesn't steal the host page's shortcuts unless
 it has focus.
 
-| key | action |
-|---|---|
-| `→` / `d` / `6` | next page (forward — flips in RTL/vertical) |
-| `←` / `a` / `4` | previous page |
-| `w` / `s` (`8` / `2`) | scroll up / down (continuous & flow modes) |
-| `,` / `.` | previous / next chapter |
-| `Home` / `End` | first / last page |
-| `m` | toggle the menu / chrome |
-| `f` | fullscreen · `i` cycle fit · `o` spread offset (image books) |
+| key                   | action                                                       |
+| --------------------- | ------------------------------------------------------------ |
+| `→` / `d` / `6`       | next page (forward — flips in RTL/vertical)                  |
+| `←` / `a` / `4`       | previous page                                                |
+| `w` / `s` (`8` / `2`) | scroll up / down (continuous & flow modes)                   |
+| `,` / `.`             | previous / next chapter                                      |
+| `Home` / `End`        | first / last page                                            |
+| `m`                   | toggle the menu / chrome                                     |
+| `f`                   | fullscreen · `i` cycle fit · `o` spread offset (image books) |
 
 The key map is data — `useReaderKeymap()` / `handle.setKeymap()` rebinds it.
 

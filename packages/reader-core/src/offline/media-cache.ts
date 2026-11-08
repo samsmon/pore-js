@@ -102,9 +102,7 @@ export class MediaCache {
     let total = books.reduce((s, b) => s + b.meta.bytes, 0);
     if (total <= this.#budget) return;
 
-    books = books
-      .filter((b) => b.bookId !== keepBookId)
-      .sort((a, b) => a.meta.at - b.meta.at);
+    books = books.filter((b) => b.bookId !== keepBookId).sort((a, b) => a.meta.at - b.meta.at);
 
     for (const victim of books) {
       if (total <= this.#budget) break;

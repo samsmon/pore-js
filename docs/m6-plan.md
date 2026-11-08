@@ -1,6 +1,6 @@
 # Pore.js — M6 Plan (editorial redesign)
 
-**Goal:** the demo works but doesn't *look* finished — the reader chrome is a
+**Goal:** the demo works but doesn't _look_ finished — the reader chrome is a
 dense row of unlabeled icon buttons and raw `<select>`s, status is shown twice,
 the settings panel is a bare form, the landing page is thin, and the palette is
 half-migrated (the orange accent was pulled from the progress bar + active
@@ -26,7 +26,7 @@ surface feel deliberate.
 `v0.9.0-editorial`.
 
 **Scope boundary.** `reader-core` engine logic and `reader-react` component
-*behaviour* do not change. `reader-react` stays headless — all styling lives in
+_behaviour_ do not change. `reader-react` stays headless — all styling lives in
 `apps/demo/src/styles.css` and the demo's components. The one core touch is
 `THEME_COLORS` in `text/create-text-engine.ts` (the reading-surface palette,
 injected into the iframe) which must move in step with the shell palette.
@@ -67,15 +67,12 @@ for now.
 
 <details><summary>Original checklist</summary>
 
-- [ ] **Palette.** Rebuild the `@theme` block in `styles.css`:
-      - Warm neutrals, not the current near-grey. Light ground ~`#faf7f1`,
-        surfaces a shade up, ink ~`#211d17`. Dark ground warm (~`#17150f`), not
-        `#121212`.
-      - Remove `--color-accent` / `--color-accent-fg`. Add `--color-focus`
-        (single functional colour — a calm blue or the ink itself at a ring
-        weight) and `--color-danger`.
-      - Reading themes: keep four (light / sepia / dark / oled), warm each,
-        make sure sepia and the new light aren't near-duplicates.
+- [ ] **Palette.** Rebuild the `@theme` block in `styles.css`: - Warm neutrals, not the current near-grey. Light ground ~`#faf7f1`,
+      surfaces a shade up, ink ~~`#211d17`. Dark ground warm (~~`#17150f`), not
+      `#121212`. - Remove `--color-accent` / `--color-accent-fg`. Add `--color-focus`
+      (single functional colour — a calm blue or the ink itself at a ring
+      weight) and `--color-danger`. - Reading themes: keep four (light / sepia / dark / oled), warm each,
+      make sure sepia and the new light aren't near-duplicates.
 - [ ] **Sync `THEME_COLORS`** in `text/create-text-engine.ts` to the same four
       values (it's injected into the sandboxed iframe as `#pore-base-style`).
       `buildFixedLayoutStylesheet` / end-page background follow it already.
@@ -91,8 +88,8 @@ for now.
       first paint needs. Real fallback stacks. Confirm final pair in open
       questions first.
 - [ ] `docs/design-language.md` — one page: the palette, the scale, the fonts,
-      the "chrome recedes" principle, and the accent-less rule, so D1–D7 (and a
-      future agent) have a reference.
+      the "chrome recedes" principle, and the accent-less rule, so D1–D7 (and
+      future contributors) have a reference.
 - [ ] No Playwright churn expected here; `pnpm test` + axe still green.
 
 **Done when:** the demo renders on the new tokens (even if individual
@@ -114,18 +111,15 @@ The headline fix. `apps/demo/src/Chrome.tsx` (~590 lines) owns the whole
 reader chrome; today the top bar crams 12–15 equal-weight icon buttons + two
 raw `<select>`s into one row.
 
-- [ ] **Restructure the bar into three zones:**
-      - *Primary* — prev / next, table of contents, search. Always visible.
-      - *Overflow* — a "More" (`⋯`) Radix `DropdownMenu`: highlights, TTS, copy
-        position, OPDS, fullscreen, home. One button instead of six.
-      - *Settings* — the gear, opening the panel (D2).
+- [ ] **Restructure the bar into three zones:** - _Primary_ — prev / next, table of contents, search. Always visible. - _Overflow_ — a "More" (`⋯`) Radix `DropdownMenu`: highlights, TTS, copy
+      position, OPDS, fullscreen, home. One button instead of six. - _Settings_ — the gear, opening the panel (D2).
 - [ ] **Kill the raw `<select>`s.** TOC → Radix `DropdownMenu` (or keep
       `<TableOfContents>` headless and style its `data-pore-toc` select
       properly — decide in open questions). Book / engine picker → a
       `DropdownMenu` too, or move it off the reading bar entirely (it's a demo
       affordance, not a reader control — could live in a corner).
 - [ ] **One status, not two.** Drop the top-right `A Complication · 37% · Ch
-      2/3 · 4 min left` label; the bottom scrubber already carries it. Or invert
+2/3 · 4 min left` label; the bottom scrubber already carries it. Or invert
       (chapter/title top, scrubber bottom) — pick one home for each fact.
 - [ ] **Icons.** Replace the emoji glyphs with a consistent SVG set (see open
       questions — leaning: vendor ~15 Lucide icons as inline components). Every
@@ -159,7 +153,6 @@ editor + swatches given a proper spacing/hover/focus pass; the resume toast,
 cards already on tokens from D0.
 
 <details><summary>Original checklist</summary>
-
 
 - [ ] **`<SettingsPanel>` presentation.** Still Radix Dialog + the headless
       `primitives.tsx` fields — restyle only. Grouped sections with quiet
@@ -232,7 +225,6 @@ folded into D5/D7.
 
 <details><summary>Original checklist</summary>
 
-
 - [ ] **Measure + rhythm.** The reading column, heading treatment (chapter
       title), paragraph spacing / indent, first-paragraph handling. Tune per
       reading theme.
@@ -289,15 +281,14 @@ Landing hero drops to `text-4xl`.
 ## D7 — Hardening + release · S · **DONE**
 
 - [x] Axe clean — light + a dedicated dark-mode chrome scan (`dark theme: the
-      chrome is still axe clean`); found + fixed a Radix slider-thumb missing
+chrome is still axe clean`); found + fixed a Radix slider-thumb missing
       its accessible name in `primitives.tsx`.
 - [x] Playwright green — 38 e2e; selectors rewritten for the accordion + rail,
       a dark-axe test added.
-- [x] `CHANGELOG.md` `v0.9.0-editorial`; `README.md` status; `CLAUDE.md`;
-      `docs/agent-worklog.md`.
+- [x] `CHANGELOG.md` `v0.9.0-editorial`; `README.md` status.
 - [x] Tag `v0.9.0-editorial`.
 - Skipped: fresh README screenshots (the README has none today; a hosted demo
-  + GIF is the standing backlog item, needs hosting creds).
+  - GIF is the standing backlog item, needs hosting creds).
 
 ---
 

@@ -1,7 +1,7 @@
 # Architecture
 
 How the engine works inside — for someone modifying `reader-core` /
-`reader-react`. For *consuming* the packages, see [`integration.md`](integration.md).
+`reader-react`. For _consuming_ the packages, see [`integration.md`](integration.md).
 For the original rationale and the source seam, see
 [`reader-engine-design.md`](reader-engine-design.md); for the image engine in
 depth, [`image-engine-spec.md`](image-engine-spec.md).
@@ -45,7 +45,7 @@ React never renders inside the engine's DOM.
   Not covered by SemVer.
 - **`dist/search-worker.js`** — its own tsup entry, loaded by the search
   controller via `new Worker(new URL('./search-worker.js', import.meta.url),
-  { type: 'module' })`; it imports the shared search-index chunk as a sibling.
+{ type: 'module' })`; it imports the shared search-index chunk as a sibling.
 - `VERSION` is injected from `package.json` by tsup `define`
   (`__POREJS_VERSION__`).
 
@@ -110,7 +110,7 @@ a spine of XHTML resources. Each spine item is rendered into a **sandboxed
 
 - **No author scripts run.** The CSP `script-src 'none'` is the real guarantee;
   `rewrite.ts` is defence in depth. The sandbox is
-  `allow-same-origin allow-scripts` — `allow-scripts` is there *only* because
+  `allow-same-origin allow-scripts` — `allow-scripts` is there _only_ because
   **WebKit/Safari delivers no pointer/selection events to a sandboxed frame
   without it**; the CSP still blocks every script. No `allow-top-navigation`,
   `allow-forms`, `allow-popups`, `allow-modals`, `allow-downloads`.
@@ -199,7 +199,7 @@ Single-page mode only.
   locally (`#bmKey`). Mirrors the `saveProgress` pattern.
 - **Bookmarks** are a per-book collection like highlights — `Bookmark`
   (`source/types.ts`) is `{ id, position, cfi?, page, percent, label, text?,
-  createdAt }`. No engine involvement: `reader-react`'s `useBookmarks()` sits
+createdAt }`. No engine involvement: `reader-react`'s `useBookmarks()` sits
   over the handle (`getCfi` / `goto` / `goToCfi`) + the source's optional
   methods.
 - **Portability** (demo): `apps/demo/src/portability.ts` — a versioned
@@ -237,12 +237,12 @@ context.
 
 ## 10. Testing strategy
 
-| what | how |
-|---|---|
-| pagination math, anchor/CFI round-trips, ZIP parsing, spread pairing, OPDS parsing, search | **Vitest** (`reader-core`), against fake documents |
-| React wiring, primitives | **Vitest** + Testing Library (`reader-react`) |
-| gestures, resize, resume, offline, a11y (axe), the assembled chrome | **Playwright** against the built demo (`apps/demo/e2e/reader.spec.ts`) |
-| anything needing a real iframe/`Range`/`SpeechSynthesis` | **browser verification** — drive the running demo, read console/DOM, screenshot |
+| what                                                                                       | how                                                                             |
+| ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| pagination math, anchor/CFI round-trips, ZIP parsing, spread pairing, OPDS parsing, search | **Vitest** (`reader-core`), against fake documents                              |
+| React wiring, primitives                                                                   | **Vitest** + Testing Library (`reader-react`)                                   |
+| gestures, resize, resume, offline, a11y (axe), the assembled chrome                        | **Playwright** against the built demo (`apps/demo/e2e/reader.spec.ts`)          |
+| anything needing a real iframe/`Range`/`SpeechSynthesis`                                   | **browser verification** — drive the running demo, read console/DOM, screenshot |
 
 Run the full Playwright suite every milestone — it has repeatedly caught bugs
 the unit tests and manual checks missed.

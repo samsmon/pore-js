@@ -15,15 +15,15 @@ points: Apple Books, iA Writer, Readwise Reader.
 The palette is **monochrome on warm neutrals**. There is no decorative accent
 colour. The only non-neutral colours are functional:
 
-| token | light | dark | use |
-|---|---|---|---|
-| `--color-canvas` | `#faf7f1` | `#17150f` | the page ground |
-| `--color-surface` | `#fffdf8` | `#211e17` | panels, cards, the rail |
-| `--color-fg` | `#23201a` | `#ece7dc` | ink — text, borders on active controls, filled toggles |
-| `--color-muted` | `#6b6357` | `#a39a89` | secondary text (≥ 4.6:1 on canvas) |
-| `--color-line` | `#e6dfd1` | `#383327` | hairlines |
-| `--color-focus` | `#3a6ea5` | `#86b0da` | **the one functional colour** — `:focus-visible` rings, links inside chrome |
-| `--color-danger` | `#a8322a` | `#e58a82` | destructive actions, error text |
+| token             | light     | dark      | use                                                                         |
+| ----------------- | --------- | --------- | --------------------------------------------------------------------------- |
+| `--color-canvas`  | `#faf7f1` | `#17150f` | the page ground                                                             |
+| `--color-surface` | `#fffdf8` | `#211e17` | panels, cards, the rail                                                     |
+| `--color-fg`      | `#23201a` | `#ece7dc` | ink — text, borders on active controls, filled toggles                      |
+| `--color-muted`   | `#6b6357` | `#a39a89` | secondary text (≥ 4.6:1 on canvas)                                          |
+| `--color-line`    | `#e6dfd1` | `#383327` | hairlines                                                                   |
+| `--color-focus`   | `#3a6ea5` | `#86b0da` | **the one functional colour** — `:focus-visible` rings, links inside chrome |
+| `--color-danger`  | `#a8322a` | `#e58a82` | destructive actions, error text                                             |
 
 Tailwind utilities: `bg-canvas`, `bg-surface`, `text-fg`, `text-muted`,
 `border-line`, `ring-focus`, `border-focus`, `outline-focus`, `text-danger`.
@@ -40,12 +40,12 @@ Tailwind utilities: `bg-canvas`, `bg-surface`, `text-fg`, `text-muted`,
 `THEME_COLORS` in `packages/reader-core/src/text/create-text-engine.ts` is
 injected into the sandboxed iframe and **must track this palette**:
 
-| theme | background | text |
-|---|---|---|
-| light | `#faf7f1` | `#23201a` |
-| sepia | `#f2e7d3` | `#4a3f30` |
-| dark | `#17150f` | `#d8d1c4` |
-| oled | `#000000` | `#cfc8bb` |
+| theme | background | text      |
+| ----- | ---------- | --------- |
+| light | `#faf7f1`  | `#23201a` |
+| sepia | `#f2e7d3`  | `#4a3f30` |
+| dark  | `#17150f`  | `#d8d1c4` |
+| oled  | `#000000`  | `#cfc8bb` |
 
 ## Type
 

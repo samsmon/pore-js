@@ -23,25 +23,19 @@ export interface ImageZoomControllerOptions {
 
 /**
  * Owns zoom scale and pan coordinates for fixed-paged image reading.
- * Manages viewport CSS transforms, wheel zooming, and double-tap toggle zoom.
+ * In v1.0.0-rc.3, fit scale is locked at 1.0 to prevent accidental panel displacement.
  */
 export class ImageZoomController {
   #viewport: HTMLElement;
   #isContinuous: () => boolean;
   #prefersReducedMotion: () => boolean;
   #transitions: ReaderTransitions;
-  #onZoomChange?: ((scale: number) => void) | undefined;
-
-  #zoom = 1;
-  #panX = 0;
-  #panY = 0;
 
   constructor(opts: ImageZoomControllerOptions) {
     this.#viewport = opts.viewport;
     this.#isContinuous = opts.isContinuous;
     this.#prefersReducedMotion = opts.prefersReducedMotion;
     this.#transitions = opts.transitions;
-    this.#onZoomChange = opts.onZoomChange;
   }
 
   get zoom(): number {
@@ -62,9 +56,6 @@ export class ImageZoomController {
   }
 
   setZoom(_next: number, _originX = 0.5, _originY = 0.5): void {
-    this.#zoom = 1;
-    this.#panX = 0;
-    this.#panY = 0;
     this.apply();
   }
 
@@ -73,9 +64,6 @@ export class ImageZoomController {
   }
 
   reset(): void {
-    this.#zoom = 1;
-    this.#panX = 0;
-    this.#panY = 0;
     this.apply();
   }
 

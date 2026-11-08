@@ -35,14 +35,24 @@ export function buildBundle(books: PortableBook[]): PortabilityBundle {
 }
 
 export type ValidationResult =
-  | { ok: true; bundle: PortabilityBundle }
-  | { ok: false; error: string };
+  { ok: true; bundle: PortabilityBundle } | { ok: false; error: string };
 
 export const CFI_RE = /^epubcfi\(.+\)$/;
+export const SAFE_COLOR_RE =
+  /^(#[0-9a-fA-F]{3,8}|[a-zA-Z]{3,20}|rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\))$/;
 
 /** Validate CFI string syntax (must match epubcfi(...)). */
 export function isValidCfi(cfi: unknown): boolean {
   return typeof cfi === 'string' && CFI_RE.test(cfi.trim());
+}
+
+/** Validate CSS highlight color token to prevent CSS injection. */
+export function isValidHighlightColor(color: unknown): color is string {
+  return typeof color === 'string' && SAFE_COLOR_RE.test(color.trim());
+}
+
+function isNonNegInt(n: unknown): n is number {
+  return typeof n === 'number' && Number.isInteger(n) && n >= 0;
 }
 
 /** Element-level runtime validator for imported highlights. */
@@ -50,13 +60,23 @@ export function isValidHighlight(raw: unknown): raw is HighlightRecord {
   if (typeof raw !== 'object' || raw === null) return false;
   const h = raw as Record<string, unknown>;
   if (typeof h.id !== 'string' || !h.id.trim()) return false;
-  if (typeof h.color !== 'string' || !h.color.trim()) return false;
+  if (!isValidHighlightColor(h.color)) return false;
   if (typeof h.text !== 'string') return false;
   if (typeof h.createdAt !== 'number' || !Number.isFinite(h.createdAt)) return false;
   if (h.note !== undefined && typeof h.note !== 'string') return false;
 
   if (h.kind === 'text') {
     if (typeof h.range !== 'object' || h.range === null) return false;
+    const rng = h.range as Record<string, unknown>;
+    if (
+      !isNonNegInt(rng.spine) ||
+      !isNonNegInt(rng.startBlock) ||
+      !isNonNegInt(rng.startOffset) ||
+      !isNonNegInt(rng.endBlock) ||
+      !isNonNegInt(rng.endOffset)
+    ) {
+      return false;
+    }
     if (typeof h.cfi !== 'object' || h.cfi === null) return false;
     const cfi = h.cfi as Record<string, unknown>;
     if (!isValidCfi(cfi.start) || !isValidCfi(cfi.end)) return false;
@@ -115,7 +135,10 @@ export function validateBundle(raw: unknown): ValidationResult {
   if (b.format !== PORTABILITY_FORMAT)
     return { ok: false, error: `Unrecognised format: ${String(b.format)}` };
   if (b.version !== PORTABILITY_VERSION)
-    return { ok: false, error: `Unsupported version: ${String(b.version)} (expected ${PORTABILITY_VERSION})` };
+    return {
+      ok: false,
+      error: `Unsupported version: ${String(b.version)} (expected ${PORTABILITY_VERSION})`,
+    };
   if (!Array.isArray(b.books)) return { ok: false, error: 'Missing "books" array.' };
   for (const [i, book] of (b.books as unknown[]).entries()) {
     if (typeof book !== 'object' || book === null)
@@ -191,7 +214,9 @@ export function mergeBundle(
     byId.set(book.id, {
       id: book.id,
       title: book.title || prev?.title || book.id,
-      position: overwrite ? (book.position ?? prev?.position ?? null) : (prev?.position ?? book.position ?? null),
+      position: overwrite
+        ? (book.position ?? prev?.position ?? null)
+        : (prev?.position ?? book.position ?? null),
       highlights: hs.merged,
       bookmarks: bs.merged,
     });

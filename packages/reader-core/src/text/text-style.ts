@@ -33,7 +33,16 @@ export interface InjectTextStyleOptions {
  * into the sandboxed reading iframe document.
  */
 export function injectTextStyle(opts: InjectTextStyleOptions): void {
-  const { cdoc, fontFaceCss, settings, layout, direction = 'ltr', fixedLayout, fixedPageSize, flow } = opts;
+  const {
+    cdoc,
+    fontFaceCss,
+    settings,
+    layout,
+    direction = 'ltr',
+    fixedLayout,
+    fixedPageSize,
+    flow,
+  } = opts;
 
   if (fontFaceCss && !cdoc.getElementById('pore-fonts')) {
     const f = cdoc.createElement('style');

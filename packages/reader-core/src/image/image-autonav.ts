@@ -93,7 +93,8 @@ export class ImageAutoNavCoordinator {
 
   startPagedAutoAdvance(): void {
     const settings = this.#opts.getSettings();
-    if (this.#autoPagedTimer || settings.pagedAutoAdvanceSeconds <= 0 || this.#opts.isContinuous()) return;
+    if (this.#autoPagedTimer || settings.pagedAutoAdvanceSeconds <= 0 || this.#opts.isContinuous())
+      return;
     this.#autoPagedTimer = setInterval(
       () => this.#opts.turn('forward'),
       settings.pagedAutoAdvanceSeconds * 1000,

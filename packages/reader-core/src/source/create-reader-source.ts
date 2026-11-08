@@ -200,7 +200,8 @@ export function readerSourceKey(input: CreateReaderSourceInput): string {
   if (input.name) return input.name;
   if (input.src) return input.src;
   if (input.pages?.length) return `pages:${input.pages.length}:${input.pages[0]}`;
-  if (input.file instanceof File && input.file.name) return `file:${input.file.name}:${input.file.size}`;
+  if (input.file instanceof File && input.file.name)
+    return `file:${input.file.name}:${input.file.size}`;
   if (input.file) return `blob:${input.file.size}:${input.file.type}`;
   return 'book';
 }

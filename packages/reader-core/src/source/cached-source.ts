@@ -79,9 +79,7 @@ export class CachedSource implements ReaderSource {
       await this.#store.set(this.#manifestKey(bookId), manifest).catch(() => {});
       return manifest;
     } catch (err) {
-      const cached = await this.#store
-        .get<Manifest>(this.#manifestKey(bookId))
-        .catch(() => null);
+      const cached = await this.#store.get<Manifest>(this.#manifestKey(bookId)).catch(() => null);
       if (cached) return cached;
       throw err;
     }

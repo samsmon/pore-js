@@ -43,11 +43,21 @@ Implement one interface and every engine feature works over it:
 import type { ReaderSource } from 'porejs';
 
 class MyLibrarySource implements ReaderSource {
-  getManifest(bookId)            { /* → { type, title, pages | spine, … } */ }
-  getPage(bookId, index)         { /* → Blob | URL (image books) */ }
-  getFile(bookId)                { /* → Blob (EPUB / PDF / CBZ) */ }
-  loadProgress(bookId)           { /* → Position | null */ }
-  saveProgress(bookId, position) { /* persist the opaque Position value */ }
+  getManifest(bookId) {
+    /* → { type, title, pages | spine, … } */
+  }
+  getPage(bookId, index) {
+    /* → Blob | URL (image books) */
+  }
+  getFile(bookId) {
+    /* → Blob (EPUB / PDF / CBZ) */
+  }
+  loadProgress(bookId) {
+    /* → Position | null */
+  }
+  saveProgress(bookId, position) {
+    /* persist the opaque Position value */
+  }
   // optional: loadHighlights / saveHighlights / loadBookmarks / saveBookmarks
 }
 ```

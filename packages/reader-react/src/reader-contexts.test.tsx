@@ -54,12 +54,24 @@ describe('PERF-01: Partition RuntimeContext', () => {
 
     function TestProvider({ children }: { children: React.ReactNode }) {
       const [pos, setPos] = useState<ReaderPositionCtx>({
-        location: { position: { type: 'page', value: 0 }, page: 0, total: 10, percent: 0, label: '1/10' },
+        location: {
+          position: { type: 'page', value: 0 },
+          page: 0,
+          total: 10,
+          percent: 0,
+          label: '1/10',
+        },
         progress: null,
       });
       setLocationExternal = (page: number) => {
         setPos({
-          location: { position: { type: 'page', value: page }, page, total: 10, percent: page / 9, label: `${page + 1}/10` },
+          location: {
+            position: { type: 'page', value: page },
+            page,
+            total: 10,
+            percent: page / 9,
+            label: `${page + 1}/10`,
+          },
           progress: null,
         });
       };

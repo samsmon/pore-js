@@ -41,7 +41,8 @@ export function segmentSentences(text: string): SentenceSpan[] {
   if (last < text.length) {
     const rest = text.slice(last);
     const trimmed = rest.trim();
-    if (trimmed) spans.push({ start: last + rest.indexOf(trimmed), end: text.length, text: trimmed });
+    if (trimmed)
+      spans.push({ start: last + rest.indexOf(trimmed), end: text.length, text: trimmed });
   }
   return spans;
 }

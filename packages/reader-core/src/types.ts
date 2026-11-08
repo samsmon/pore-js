@@ -27,9 +27,4 @@ export type TurnDirection = 'forward' | 'back';
  * - `handle+long-press` — both
  * - `none` — the engine never asks; the host drives it
  */
-export type ChromeGesture =
-  | 'handle'
-  | 'tap-center'
-  | 'long-press'
-  | 'handle+long-press'
-  | 'none';
+export type ChromeGesture = 'handle' | 'tap-center' | 'long-press' | 'handle+long-press' | 'none';

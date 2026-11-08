@@ -39,7 +39,12 @@ function defaultLabel(i: ScrubberLabelInfo): ReactNode {
  * keyboard-seekable and labelled). Chapter tick marks, a live "Ch 3/12 · 47%"
  * label. Renders nothing until the book has more than one page.
  */
-export function ReaderScrubber({ className, ticks = true, label, dir = 'ltr' }: ReaderScrubberProps) {
+export function ReaderScrubber({
+  className,
+  ticks = true,
+  label,
+  dir = 'ltr',
+}: ReaderScrubberProps) {
   const loc = useReaderLocation();
   const progress = useReaderProgress();
   const chapters = useReaderChapters();

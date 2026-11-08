@@ -15,14 +15,14 @@ Severity: 🔴 broken feature · 🟠 degraded / edge case · 🟡 papercut / ni
 
 The demo has a service worker (`apps/demo/public/sw.js`) but no
 `manifest.webmanifest` / maskable icons / `theme-color`, so it's not "installable".
-Small follow-up for H9; the reader works fine without it. *(M8 H9)*
+Small follow-up for H9; the reader works fine without it. _(M8 H9)_
 
 ### 🟠 No manual screen-reader pass yet
 
 axe (2.0 + 2.1 A/AA), keyboard-traversal and `forced-colors` are automated and
 green. A real **NVDA + VoiceOver** walk-through (open → read → TOC → highlight →
 bookmark → settings → search → home) is still owed for `v1.0`. See
-`docs/accessibility.md`. *(M8 H7)*
+`docs/accessibility.md`. _(M8 H7)_
 
 ### 🟡 e2e flake: WebKit selection / reduced-motion under full parallel load
 
@@ -30,7 +30,7 @@ bookmark → settings → search → home) is still owed for `v1.0`. See
 occasionally fail first-try on WebKit when both browsers run in parallel; pass on
 retry (CI has `retries: 2`). The synthetic-selection tests now wait for
 `.selection-toolbar` (10 s) which helped but didn't fully kill it. A real
-mouse-drag selection helper would be firmer. *(M8 H5/H7)*
+mouse-drag selection helper would be firmer. _(M8 H5/H7)_
 
 ### 🟡 No engine-level performance scenario harness
 
@@ -39,7 +39,7 @@ mouse-drag selection helper would be firmer. *(M8 H5/H7)*
 TTI, `paginate` ms, or peak heap** for a real 1000-page PDF / 400-chapter EPUB /
 3000-image webtoon in a real browser — that needs Playwright +
 `performance.measureUserAgentSpecificMemory()`. Follow-up, not `1.0`-blocking.
-*(M8 H6)*
+_(M8 H6)_
 
 ### 🟡 `porejs` "all engines" import is +130 kB if the bundler inlines dynamic imports
 
@@ -49,7 +49,7 @@ default (so `import { createPdfEngine }` costs ~4 kB up front; pdf.js loads when
 a PDF opens). A bundler configured to inline dynamic imports, or `size-limit`
 without the `ignore`, sees the full ~130 kB brotli. Not a bug — but worth a
 louder note in `integration.md` and maybe a `porejs/pdf` subpath export so the
-split is explicit. *(found M8 H6)*
+split is explicit. _(found M8 H6)_
 
 ### 🟠 No load-time guard rails on the engines
 
@@ -57,7 +57,7 @@ A source that hangs forever in `getManifest()` / `getFile()`, a manifest with
 100 000 pages, or an image page 100 000 px wide will not crash (H4 proved the
 parse layer is safe) but also won't time out or clamp — the reader just spins.
 Planned as additive `<Reader>` options (`loadTimeoutMs`, `maxManifestPages`,
-`maxPageDim`); own small task, not `1.0`-blocking. *(M8 H4)*
+`maxPageDim`); own small task, not `1.0`-blocking. _(M8 H4)_
 
 ### 🟠 Firefox e2e unverified on the maintainer's Windows box
 
@@ -65,33 +65,33 @@ Planned as additive `<Reader>` options (`loadTimeoutMs`, `maxManifestPages`,
 Playwright Firefox binary, not a code issue. Firefox **is** in the CI matrix and
 green there. If CI ever flags a real Firefox-only bug it lands here. To run
 locally: reinstall (`pnpm --filter @pore/demo exec playwright install firefox`)
-and unblock the `.exe`. *(M8 H5)*
+and unblock the `.exe`. _(M8 H5)_
 
 ### 🟠 PDF pages are larger on Safari / no-`OffscreenCanvas` browsers
 
 The WebP → PNG fallback (needed because Safari can't encode WebP from a canvas)
 roughly triples the per-page blob size. Fine for reading, heavier on the
 `MediaCache` offline download. A JPEG fallback (`image/jpeg`, q≈0.85) would be a
-middle ground. *(M8 H5)*
+middle ground. _(M8 H5)_
 
 ### 🟡 Annotations review / export–import only see "sample" books in the demo
 
 They read the shared demo source; a dropped local file keeps its annotations but
 isn't listed until re-opened. Demo-level limitation (the review is a
-`useLibrary()` + demo-source thing), not a library one. *(M7 L3 / L4)*
+`useLibrary()` + demo-source thing), not a library one. _(M7 L3 / L4)_
 
 ### 🟡 `demo-pdf` opened right-to-left until M8
 
 `DEFAULT_IMAGE_SETTINGS.direction` is `'rtl'` (manga-first). PDFs and Western
 comics want `'ltr'`. Worked around per-sample in the demo; the engine default is
 arguably wrong for a general PDF but flipping it is a behaviour change for
-manga-first consumers. Revisit at the API freeze if not already. *(M8 H5)*
+manga-first consumers. Revisit at the API freeze if not already. _(M8 H5)_
 
 ### 🟡 e2e flake: vertical-JP under parallel load
 
 `vertical-JP EPUB reads right-to-left` occasionally times out at 30 s when the
 3-browser matrix saturates the box; passes solo and on retry. Polls for a
-settled transform already; could use a firmer readiness signal. *(M8 H5)*
+settled transform already; could use a firmer readiness signal. _(M8 H5)_
 
 ---
 
@@ -100,10 +100,9 @@ settled transform already; could use a firmer readiness signal. *(M8 H5)*
 ### 🟠 Not usable one-handed on a phone — `(M8 H12)`
 
 No swipe on the text engine, no `touch-action` (300 ms tap delay, browser
-fighting the engine for gestures), no double-tap zoom, and the only way to the
+fighting the engine for gestures), and the only way to the
 menu was a keyboard or a centre tap you couldn't discover. Fixed at the engine
-level: touch swipe-to-turn (text + image), deliberate `touch-action`, touch-only
-double-tap zoom on images, and a faint bottom-centre chrome handle
+level: touch swipe-to-turn (text + image), deliberate `touch-action`, locked 1.0 fit scale on images (eliminating accidental zoom/pan displacement), and a faint bottom-centre chrome handle
 (`[data-pore-chrome-handle]`, `chromeGesture` setting). Double-tap detection is
 gated to `pointerType !== 'mouse'` so a fast double-click still turns two pages;
 the synthetic `dblclick` that trails a touch double-tap is suppressed for 500 ms.

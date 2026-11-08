@@ -52,7 +52,9 @@ export function App() {
     <div className="library">
       <header>
         <h1>Inkwell</h1>
-        <p>A pretend manga library. The reader is dropped in from <code>porejs-react</code>.</p>
+        <p>
+          A pretend manga library. The reader is dropped in from <code>porejs-react</code>.
+        </p>
       </header>
       {SERIES.map((s) => (
         <section key={s.slug}>

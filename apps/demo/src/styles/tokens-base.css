@@ -1,0 +1,113 @@
+/* Class-strategy dark mode: <html class="dark"> */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---- design tokens — see docs/design-language.md ----------------------- */
+@theme {
+  /* Quiet / editorial: warm paper, ink, no decorative accent. The only
+     non-neutral colour is --color-focus (state) / --color-danger. */
+  --color-canvas: #faf7f1; /* warm paper */
+  --color-surface: #fffdf8; /* panels / cards, one step brighter */
+  --color-fg: #23201a; /* warm near-black ink */
+  --color-muted: #6b6357; /* warm grey — ≥ 4.6:1 on canvas */
+  --color-line: #e6dfd1; /* warm hairline */
+  --color-focus: #3a6ea5; /* the one functional colour: focus ring, links-in-chrome */
+  --color-danger: #a8322a;
+
+  --radius-panel: 14px;
+  --radius-control: 9px;
+
+  --shadow-panel: 0 8px 30px -12px rgb(35 32 26 / 0.18), 0 0 0 1px rgb(35 32 26 / 0.05);
+  --shadow-popover: 0 6px 20px -8px rgb(35 32 26 / 0.16), 0 0 0 1px rgb(35 32 26 / 0.06);
+
+  --font-sans: 'Hanken Grotesk Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Literata Variable', Georgia, 'Times New Roman', serif;
+}
+
+/* dark palette — same roles, swapped values, still warm */
+.dark {
+  --color-canvas: #17150f;
+  --color-surface: #211e17;
+  --color-fg: #ece7dc;
+  --color-muted: #a39a89;
+  --color-line: #383327;
+  --color-focus: #86b0da;
+  --color-danger: #e58a82;
+
+  --shadow-panel: 0 8px 30px -12px rgb(0 0 0 / 0.5), 0 0 0 1px rgb(255 255 255 / 0.06);
+  --shadow-popover: 0 6px 20px -8px rgb(0 0 0 / 0.45), 0 0 0 1px rgb(255 255 255 / 0.07);
+}
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+  }
+  .dark {
+    color-scheme: dark;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    line-height: 1.5;
+  }
+
+  /* one consistent focus ring everywhere — from the single functional colour */
+  :where(button, a, select, input, textarea, [tabindex], summary):focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Windows High Contrast / forced-colors: our tokens are ignored, so lean on
+     the system keywords — keep every control outlined, the focus ring on a
+     system colour, and active/selected states legible. */
+  @media (forced-colors: active) {
+    .bar,
+    .bar__settings-inline,
+    .highlights-panel,
+    .review__panel,
+    .tts-bar,
+    .selection-toolbar,
+    .landing__drop,
+    .landing__samples button,
+    .landing__recent-open,
+    .mobile-header,
+    .mobile-bottom-bar,
+    .mobile-sheet,
+    .mobile-pos-indicator,
+    .mobile-sheet__close,
+    .mobile-btn {
+      border: 1px solid CanvasText !important;
+    }
+    :where(button, a, select, input, [tabindex], summary):focus-visible {
+      outline: 2px solid Highlight !important;
+      outline-offset: 2px;
+    }
+    .bar button.active,
+    .bar button[aria-pressed='true'],
+    [data-pore-accordion-summary][data-state='open'],
+    [aria-selected='true'] {
+      outline: 1px solid Highlight !important;
+      outline-offset: -3px;
+    }
+    .landing__recent-fill,
+    .pore-lightbar__fill,
+    .progress--value {
+      background: Highlight !important;
+    }
+  }
+
+  /* honour the OS "reduce motion" setting across every animation/transition */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

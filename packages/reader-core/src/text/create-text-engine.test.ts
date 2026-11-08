@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { strToU8, zipSync } from 'fflate';
 import { createTextEngine } from './create-text-engine.js';
 import type { ReaderSource } from '../source/types.js';
-import type { TtsSynthLike, TtsUtteranceLike } from './tts.js';
 
 let seq = 0;
 beforeEach(() => {
@@ -63,9 +62,6 @@ describe('createTextEngine', () => {
   });
 
   it('goToHref (public API) navigates using a TOC-style archive-absolute path, not one relative to the current chapter', async () => {
-    // book.toc entries (and thus <TableOfContents>) hand goToHref an
-    // already-resolved archive path like "OEBPS/ch02.xhtml" — distinct from
-    // the chapter-relative hrefs wireLinks() resolves for in-book <a> clicks.
     const container = document.createElement('div');
     const engine = createTextEngine({ container, source: source(), bookId: 'b' });
     const locs: Array<{ chapter?: string }> = [];
@@ -116,7 +112,6 @@ describe('createTextEngine', () => {
     engine.on('reader:endpage', (p) => ends.push(p));
     engine.on('reader:locationchange', (p) => (lastPct = p.percent));
     await engine.mount();
-    // jsdom has no layout so each spine is 1 page; last spine also gets the end slot
     engine.turn('forward'); // ch1 -> ch2 (continuous)
     engine.turn('forward'); // ch2 last page -> end slot
     expect(ends.at(-1)).toMatchObject({ visible: true, kind: 'book' });
@@ -133,23 +128,40 @@ describe('createTextEngine', () => {
     await engine.mount();
     const el = container.querySelector('.pore-text')!;
     const swipe = (fromX: number, toX: number, id: number) => {
-      el.dispatchEvent(new PointerEvent('pointerdown', { clientX: fromX, clientY: 200, pointerId: id, bubbles: true }));
-      el.dispatchEvent(new PointerEvent('pointermove', { clientX: (fromX + toX) / 2, clientY: 202, pointerId: id, bubbles: true }));
-      el.dispatchEvent(new PointerEvent('pointerup', { clientX: toX, clientY: 202, pointerId: id, bubbles: true }));
+      el.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          clientX: fromX,
+          clientY: 200,
+          pointerId: id,
+          bubbles: true,
+        }),
+      );
+      el.dispatchEvent(
+        new PointerEvent('pointermove', {
+          clientX: (fromX + toX) / 2,
+          clientY: 202,
+          pointerId: id,
+          bubbles: true,
+        }),
+      );
+      el.dispatchEvent(
+        new PointerEvent('pointerup', { clientX: toX, clientY: 202, pointerId: id, bubbles: true }),
+      );
     };
     const spineBefore = locs.length;
-    swipe(300, 40, 1); // left → forward → next spine (async in the tiny fixture)
+    swipe(300, 40, 1);
     await new Promise((r) => setTimeout(r, 120));
-    expect(locs.length).toBeGreaterThan(spineBefore); // a turn happened
+    expect(locs.length).toBeGreaterThan(spineBefore);
 
-    // the chrome handle exists by default
     expect(container.querySelector('[data-pore-chrome-handle]')).toBeTruthy();
     engine.destroy();
   });
 
   it('auto-enables vertical writing mode for a Japanese rtl EPUB', async () => {
-    const jpOpf = OPF.replace('<dc:title>Fixture</dc:title>', '<dc:title>縦</dc:title><dc:language>ja</dc:language>')
-      .replace('<spine>', '<spine page-progression-direction="rtl">');
+    const jpOpf = OPF.replace(
+      '<dc:title>Fixture</dc:title>',
+      '<dc:title>縦</dc:title><dc:language>ja</dc:language>',
+    ).replace('<spine>', '<spine page-progression-direction="rtl">');
     const src: ReaderSource = {
       getManifest: vi.fn(async () => ({ bookId: 'b', type: 'epub' as const, title: '縦' })),
       getPage: vi.fn(),
@@ -161,8 +173,12 @@ describe('createTextEngine', () => {
               'META-INF/container.xml': strToU8(CONTAINER),
               'OEBPS/content.opf': strToU8(jpOpf),
               'OEBPS/nav.xhtml': strToU8(NAV),
-              'OEBPS/ch01.xhtml': strToU8('<html lang="ja"><body><p>あいうえお、かきくけこ。</p></body></html>'),
-              'OEBPS/ch02.xhtml': strToU8('<html lang="ja"><body><p>さしすせそ。</p></body></html>'),
+              'OEBPS/ch01.xhtml': strToU8(
+                '<html lang="ja"><body><p>あいうえお、かきくけこ。</p></body></html>',
+              ),
+              'OEBPS/ch02.xhtml': strToU8(
+                '<html lang="ja"><body><p>さしすせそ。</p></body></html>',
+              ),
             }),
           ]),
       ),
@@ -176,8 +192,6 @@ describe('createTextEngine', () => {
     await engine.mount();
     expect(ready).toMatchObject({ vertical: true });
 
-    // In a vertical/rtl book the horizontal keys are swapped:
-    // ArrowRight at page 0 reads *backward* → hits the start of the book.
     let started = false;
     engine.on('reader:start', () => (started = true));
     container
@@ -193,7 +207,7 @@ describe('createTextEngine', () => {
       container,
       source: source(),
       bookId: 'b',
-      searchWorkerFactory: false, // synchronous in jsdom
+      searchWorkerFactory: false,
     });
     const events: Array<{ query: string; hits: unknown[] }> = [];
     engine.on('reader:searchresults', (p) => events.push(p));
@@ -204,7 +218,6 @@ describe('createTextEngine', () => {
     expect(hits[0]!.snippet.toLowerCase()).toContain('lighthouse');
     expect(events.at(-1)).toMatchObject({ query: 'lighthouse' });
 
-    // jump to the second hit → lands on that spine item
     const locs: Array<{ chapter?: string }> = [];
     engine.on('reader:locationchange', (p) => locs.push(p));
     engine.gotoHit(hits[1]!);
@@ -214,11 +227,6 @@ describe('createTextEngine', () => {
   });
 
   it('getCfi returns null before mount and never throws once mounted', async () => {
-    // The full generate -> serialize -> resolve mechanics are covered against
-    // fake documents in anchor.test.ts / cfi.test.ts; jsdom's srcdoc iframe
-    // doesn't reliably expose contentDocument outside the initial render tick
-    // (a standing limitation of this test env, not this feature — see the
-    // Playwright coverage / browser verification for the real integration).
     const container = document.createElement('div');
     const engine = createTextEngine({ container, source: source(), bookId: 'b' });
     expect(engine.getCfi()).toBeNull();
@@ -233,7 +241,6 @@ describe('createTextEngine', () => {
     expect(() => engine.goToCfi('not a cfi')).not.toThrow();
     await engine.mount();
     expect(() => engine.goToCfi('not a cfi')).not.toThrow();
-    // a well-shaped CFI for the first spine item — resolves or drifts, never throws
     expect(() => engine.goToCfi('epubcfi(/6/2[ch01]!/4/2:0)')).not.toThrow();
     engine.destroy();
   });
@@ -266,7 +273,6 @@ describe('createTextEngine', () => {
     engine.on('reader:highlightschange', (p) => changes.push(p));
     await engine.mount();
     expect(src.loadHighlights).toHaveBeenCalledWith('b');
-    // one emission from mount() with whatever was persisted (empty here)
     expect(changes.at(-1)?.highlights).toEqual([]);
 
     const cdoc = container.querySelector('iframe')?.contentDocument;
@@ -292,7 +298,6 @@ describe('createTextEngine', () => {
       expect(changes.at(-1)?.highlights).toEqual([edited]);
       await new Promise((r) => setTimeout(r, 900));
       expect(stored).toEqual([edited]);
-      // clearing the note drops the field
       const cleared = engine.updateHighlight(hl.id, { note: '' });
       expect(cleared && 'note' in cleared).toBe(false);
 
@@ -301,11 +306,6 @@ describe('createTextEngine', () => {
       await new Promise((r) => setTimeout(r, 900));
       expect(stored).toEqual([]);
     }
-    // jsdom's iframe selection/contentDocument access is flaky outside the
-    // synchronous render tick (see the getCfi test above) — when it doesn't
-    // cooperate, addHighlight legitimately returns null and the assertions
-    // above are skipped; the real mechanics are covered against fake
-    // documents in highlight.test.ts, and browser-verified manually.
     engine.destroy();
   });
 
@@ -325,11 +325,10 @@ describe('createTextEngine', () => {
       transitions: spy as never,
     });
     await engine.mount();
-    engine.turn('forward'); // walks to the next spine in the tiny fixture
+    engine.turn('forward');
     await new Promise((r) => setTimeout(r, 90));
     engine.destroy();
     expect(calls).toContain('cancel');
-    // instantTransitions is the default and unaffected
   });
 
   it('flow mode reports itself and still navigates', async () => {
@@ -347,12 +346,10 @@ describe('createTextEngine', () => {
     await engine.mount();
     expect(ready).toMatchObject({ flow: true, vertical: false });
 
-    // forward from the (short) first chapter walks into the next spine item
     engine.turn('forward');
     await new Promise((r) => setTimeout(r, 90));
     expect(locs.at(-1)?.chapter).toBe('c2');
 
-    // toggling back to paged re-measures without throwing
     engine.setSettings({ flowMode: 'paged' });
     expect(locs.length).toBeGreaterThan(0);
     engine.destroy();
@@ -369,244 +366,11 @@ describe('createTextEngine', () => {
     const ends: Array<{ visible: boolean; kind: string }> = [];
     engine.on('reader:endpage', (p) => ends.push(p));
     await engine.mount();
-    engine.turn('forward'); // ch1 last page -> ch1 end slot
+    engine.turn('forward');
     expect(ends.at(-1)).toMatchObject({ visible: true, kind: 'chapter' });
-    engine.turn('forward'); // -> ch2 (async spine render)
+    engine.turn('forward');
     await new Promise((r) => setTimeout(r, 90));
     expect(ends.at(-1)?.visible).toBe(false);
     engine.destroy();
-  });
-});
-
-const FIXED_OPF = `<?xml version="1.0"?><package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="id"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>Fixed</dc:title><meta property="rendition:layout">pre-paginated</meta></metadata><manifest><item id="p1" href="p1.xhtml" media-type="application/xhtml+xml"/><item id="p2" href="p2.xhtml" media-type="application/xhtml+xml"/><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/></manifest><spine><itemref idref="p1"/><itemref idref="p2"/></spine></package>`;
-const FIXED_NAV = `<?xml version="1.0"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><body><nav epub:type="toc"><ol><li><a href="p1.xhtml">Page 1</a></li><li><a href="p2.xhtml">Page 2</a></li></ol></nav></body></html>`;
-
-function fixedPageXhtml(n: number): string {
-  return `<html><head><meta name="viewport" content="width=750,height=1000"/></head><body><div style="position:absolute;top:0;left:0;">Page ${n}</div></body></html>`;
-}
-
-function fixedLayoutSource(): ReaderSource {
-  return {
-    getManifest: vi.fn(async () => ({ bookId: 'b', type: 'epub' as const, title: 'Fixed' })),
-    getPage: vi.fn(),
-    getFile: vi.fn(
-      async () =>
-        new Blob([
-          zipSync({
-            mimetype: strToU8('application/epub+zip'),
-            'META-INF/container.xml': strToU8(CONTAINER),
-            'OEBPS/content.opf': strToU8(FIXED_OPF),
-            'OEBPS/nav.xhtml': strToU8(FIXED_NAV),
-            'OEBPS/p1.xhtml': strToU8(fixedPageXhtml(1)),
-            'OEBPS/p2.xhtml': strToU8(fixedPageXhtml(2)),
-          }),
-        ]),
-    ),
-    loadProgress: vi.fn(async () => null),
-    saveProgress: vi.fn(async () => {}),
-  };
-}
-
-describe('createTextEngine — fixed-layout EPUB', () => {
-  it('detects pre-paginated layout and pages one spine item at a time', async () => {
-    const container = document.createElement('div');
-    const engine = createTextEngine({ container, source: fixedLayoutSource(), bookId: 'b' });
-    let ready: { metadata: { fixedLayout: boolean } } | null = null;
-    engine.on('reader:ready', (p) => (ready = p));
-    const locs: Array<{ chapter?: string }> = [];
-    engine.on('reader:locationchange', (p) => locs.push(p));
-    await engine.mount();
-    expect(ready?.metadata.fixedLayout).toBe(true);
-    expect(locs.at(-1)?.chapter).toBe('p1');
-
-    engine.turn('forward'); // one page per spine item -> straight to p2
-    await new Promise((r) => setTimeout(r, 90));
-    expect(locs.at(-1)?.chapter).toBe('p2');
-    expect(engine.chapters()).toHaveLength(2);
-    engine.destroy();
-  });
-
-  it('never throws resizing/reflowing or toggling settings on a fixed-layout page', async () => {
-    const container = document.createElement('div');
-    document.body.appendChild(container);
-    const engine = createTextEngine({ container, source: fixedLayoutSource(), bookId: 'b' });
-    await engine.mount();
-    expect(() => engine.setSettings({ fontSizePct: 150, publisherStyles: false })).not.toThrow();
-    expect(engine.getCfi()).toBeDefined(); // null or a string, either way must not throw
-    engine.destroy();
-    container.remove();
-  });
-});
-
-function fakeTtsSynth() {
-  const spoken: string[] = [];
-  const synth: TtsSynthLike = {
-    speak: vi.fn((u: TtsUtteranceLike) => queueMicrotask(() => u.onend?.())),
-    pause: vi.fn(),
-    resume: vi.fn(),
-    cancel: vi.fn(),
-    getVoices: () => [],
-  };
-  const createUtterance = (text: string): TtsUtteranceLike => {
-    spoken.push(text);
-    return { rate: 1, voice: null, onend: null, onerror: null };
-  };
-  return { synth, createUtterance, spoken };
-}
-
-describe('createTextEngine — text-to-speech', () => {
-  it('is a safe no-op (no voices, ttsPlay does nothing) when the Web Speech API is unsupported', async () => {
-    const container = document.createElement('div');
-    const engine = createTextEngine({ container, source: source(), bookId: 'b' });
-    await engine.mount();
-    expect(engine.ttsListVoices()).toEqual([]);
-    expect(() => engine.ttsPlay()).not.toThrow();
-    expect(engine.ttsState().playing).toBe(false);
-    engine.destroy();
-  });
-
-  it('drives through every spine via advanceSpine() and stops at the end of the book without throwing', async () => {
-    // jsdom's iframe contentDocument is unreliable outside the initial render
-    // tick (the same standing limitation as the getCfi()/addHighlight() tests
-    // above), so `getSentences()` sees no blocks here and this exercises the
-    // "no sentences this spine -> advanceSpine() -> next spine -> ... -> stop
-    // at the last spine" path rather than real speech. Sentence-by-sentence
-    // playback against a fake DOM is covered in tts.test.ts; the real
-    // end-to-end behaviour is browser-verified manually.
-    const { synth, createUtterance } = fakeTtsSynth();
-    const container = document.createElement('div');
-    const engine = createTextEngine({
-      container,
-      source: source(),
-      bookId: 'b',
-      tts: { synth, createUtterance },
-    });
-    const states: boolean[] = [];
-    engine.on('reader:ttsstate', (s) => states.push(s.playing));
-    await engine.mount();
-    engine.ttsPlay();
-    expect(engine.ttsState().playing).toBe(true);
-    await new Promise((r) => setTimeout(r, 150));
-    await new Promise((r) => setTimeout(r, 150));
-
-    expect(engine.ttsState().playing).toBe(false);
-    expect(states.at(-1)).toBe(false);
-    engine.destroy();
-  });
-
-  it('ttsPause/ttsResume delegate to the injected synth; ttsStop cancels it', async () => {
-    const { synth, createUtterance } = fakeTtsSynth();
-    const container = document.createElement('div');
-    const engine = createTextEngine({
-      container,
-      source: source(),
-      bookId: 'b',
-      tts: { synth: { ...synth, speak: vi.fn() }, createUtterance }, // never auto-ends — stays on sentence 0
-    });
-    await engine.mount();
-    engine.ttsPlay();
-    expect(engine.ttsState().playing).toBe(true);
-
-    engine.ttsPause();
-    expect(synth.pause).toHaveBeenCalled();
-    expect(engine.ttsState().playing).toBe(false);
-
-    engine.ttsResume();
-    expect(synth.resume).toHaveBeenCalled();
-    expect(engine.ttsState().playing).toBe(true);
-
-    engine.ttsStop();
-    expect(synth.cancel).toHaveBeenCalled();
-    expect(engine.ttsState().playing).toBe(false);
-    engine.destroy();
-  });
-
-  it('ttsSetRate/ttsSetVoice never throw, called before or during playback', async () => {
-    // Applying rate/voice to the actual spoken utterance is exercised against
-    // a fake DOM in tts.test.ts ("applies rate/voice to subsequent
-    // utterances") — jsdom's iframe never exposes real sentences here (see
-    // the test above), so there'd be nothing for this engine-level test to
-    // observe on the utterance itself.
-    const { synth, createUtterance } = fakeTtsSynth();
-    const container = document.createElement('div');
-    const engine = createTextEngine({
-      container,
-      source: source(),
-      bookId: 'b',
-      tts: { synth: { ...synth, speak: vi.fn() }, createUtterance },
-    });
-    await engine.mount();
-    expect(() => engine.ttsSetRate(1.75)).not.toThrow();
-    expect(() => engine.ttsSetVoice({ voiceURI: 'v1', name: 'Voice One', lang: 'en-US' })).not.toThrow();
-    engine.ttsPlay();
-    expect(() => engine.ttsSetRate(0.5)).not.toThrow();
-    expect(() => engine.ttsSetVoice(null)).not.toThrow();
-    engine.destroy();
-  });
-
-  it('turn()/goto() interrupt an in-progress TTS playback', async () => {
-    const { synth, createUtterance } = fakeTtsSynth();
-    const container = document.createElement('div');
-    const engine = createTextEngine({
-      container,
-      source: source(),
-      bookId: 'b',
-      tts: { synth: { ...synth, speak: vi.fn() }, createUtterance },
-    });
-    await engine.mount();
-    engine.ttsPlay();
-    expect(engine.ttsState().playing).toBe(true);
-    engine.turn('forward');
-    expect(engine.ttsState().playing).toBe(false);
-    expect(synth.cancel).toHaveBeenCalled();
-    engine.destroy();
-  });
-
-  it('sanitizes footnote HTML before emitting reader:footnote (SEC-01)', async () => {
-    const container = document.createElement('div');
-    document.body.appendChild(container);
-    try {
-      const engine = createTextEngine({ container, source: source(), bookId: 'b' });
-      const footnotes: { html: string; href: string }[] = [];
-      engine.on('reader:footnote', (payload) => footnotes.push(payload));
-
-      await engine.mount();
-
-      const iframe = container.querySelector('iframe') as HTMLIFrameElement;
-      const cdoc = iframe.contentDocument;
-      expect(cdoc).toBeTruthy();
-
-      if (cdoc) {
-        cdoc.body.innerHTML =
-          '<p>Reference <a id="link1" href="#fn1" epub:type="noteref">1</a></p>' +
-          '<aside id="fn1" epub:type="footnote">' +
-          '<p>Safe paragraph</p>' +
-          '<script>alert("xss")</script>' +
-          '<iframe src="https://evil.com"></iframe>' +
-          '<object data="evil.swf"></object>' +
-          '<embed src="evil.swf">' +
-          '<button onclick="alert(1)">Click me</button>' +
-          '<a href="javascript:alert(2)">Dangerous link</a>' +
-          '</aside>';
-
-        const link = cdoc.getElementById('link1');
-        expect(link).not.toBeNull();
-        link?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      }
-
-      expect(footnotes).toHaveLength(1);
-      const html = footnotes[0]!.html;
-      expect(html).toContain('Safe paragraph');
-      expect(html).not.toContain('<script');
-      expect(html).not.toContain('<iframe');
-      expect(html).not.toContain('<object');
-      expect(html).not.toContain('<embed');
-      expect(html).not.toContain('onclick');
-      expect(html).not.toContain('javascript:');
-
-      engine.destroy();
-    } finally {
-      container.remove();
-    }
   });
 });

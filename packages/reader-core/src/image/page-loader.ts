@@ -90,6 +90,11 @@ export class PageLoader {
 
     entry.promise = this.#fetch(index, controller.signal)
       .then(({ url, objectUrl, bytes, bitmap }) => {
+        if (controller.signal.aborted || this.#entries.get(index) !== entry) {
+          if (objectUrl && url) URL.revokeObjectURL(url);
+          bitmap?.close();
+          throw new DOMException('Aborted', 'AbortError');
+        }
         entry.url = url;
         entry.objectUrl = objectUrl;
         entry.bytes = bytes;
@@ -103,10 +108,12 @@ export class PageLoader {
         return url;
       })
       .catch((err: unknown) => {
-        entry.state = 'error';
-        entry.promise = undefined;
-        entry.controller = undefined;
-        this.#emit(index, 'error');
+        if (this.#entries.get(index) === entry) {
+          entry.state = 'error';
+          entry.promise = undefined;
+          entry.controller = undefined;
+          this.#emit(index, 'error');
+        }
         throw err;
       });
     return entry.promise;

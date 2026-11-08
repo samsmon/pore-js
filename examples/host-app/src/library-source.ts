@@ -1,10 +1,4 @@
-import type {
-  GetFileOpts,
-  GetPageOpts,
-  ImageManifest,
-  Position,
-  ReaderSource,
-} from 'porejs';
+import type { GetFileOpts, GetPageOpts, ImageManifest, Position, ReaderSource } from 'porejs';
 import { seriesOf, volumeOf } from './catalog.js';
 
 /**

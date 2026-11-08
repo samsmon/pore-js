@@ -1,9 +1,7 @@
 # Contributing
 
-The full contributor + AI-agent guide is
-[`docs/ai-agent-guide.md`](docs/ai-agent-guide.md) — repo map, how to
-run/build/test/verify, the invariants, the current milestone. Read that first.
-[`CLAUDE.md`](CLAUDE.md) has the commit conventions.
+See [`docs/architecture.md`](docs/architecture.md) for engine internals and
+[`docs/integration.md`](docs/integration.md) for consuming the packages.
 
 ## Quick reference
 
@@ -23,7 +21,7 @@ pnpm --filter @pore/demo e2e
 Conventional Commits, enforced by `commitlint`. House style:
 `type(scope): <TASK-CODE> — <description>` (e.g. `feat(core): H2 — host-app example`).
 Scopes: `core`, `react`, `demo`, `docs`. **One author per commit — the
-repository owner.** No `Co-authored-by`, no tool-attribution trailers.
+repository owner.**
 
 ## Versioning & releases
 
@@ -46,5 +44,4 @@ Docs / tests / CI / demo-only changes don't need a changeset.
 ## Milestones
 
 See `docs/*-plan.md`. Update the relevant plan in the same commit that
-completes a plan item, and append to `docs/agent-worklog.md` after each
-meaningful unit of work.
+completes a plan item.

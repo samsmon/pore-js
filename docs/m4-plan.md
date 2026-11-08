@@ -50,7 +50,7 @@ F1/F2; they can reorder or drop without blocking the others.
       (Skipped the separate `RangeAnchor` type — a single-offset CFI covers
       the resume-position use case F1 targets; F2 can add a range pair when
       highlights need start+end.)
-- [x] `TextEngine.getCfi(): string | null` wired end-to-end: engine → 
+- [x] `TextEngine.getCfi(): string | null` wired end-to-end: engine →
       `reader-react`'s `ReaderHandle` → a real demo feature (🔗 "Copy position"
       button in `Chrome.tsx`, EPUB-only) — browser-verified producing
       `epubcfi(/6/6[c3]!/2/2/2:0)` for a real reading position.
@@ -128,6 +128,7 @@ dedicated `reader-react` highlights-panel component are cut to a follow-up
 note, so that follow-up is UI-only.
 
 **Cut from this pass (tracked, not blocking F1→F3/F4/F5/F6):**
+
 - **PDF rect-based highlights** — `createPdfEngine` doesn't get `addHighlight`
   in this pass; it needs its own page+bbox addressing (via pdf.js's text
   layer) distinct from the EPUB block/offset scheme, sized like its own
@@ -162,7 +163,7 @@ adapter/image-engine detour wasn't worth it.
       scaled + centred via a live `transform: translate(...) scale(...)` on
       `#pore-flow` recomputed on resize; new pure helpers in `paginate.ts`:
       `parseFixedViewportMeta` (reads the page's own `<meta name="viewport"
-      content="width=…,height=…">`), `fixedLayoutScale`,
+content="width=…,height=…">`), `fixedLayoutScale`,
       `buildFixedLayoutStylesheet`. Author CSS is never stripped for a
       fixed-layout book regardless of the `publisherStyles` setting —
       positioning is entirely author-CSS-driven.
@@ -180,9 +181,10 @@ adapter/image-engine detour wasn't worth it.
       normally sized to the exact page) constrained `#pore-viewport`'s
       `width:100%` to that instead of the actual (usually wider) reader
       window. Fixed with an explicit `width:100% !important;height:100%
-      !important` on the injected `html, body` rule.
+!important` on the injected `html, body` rule.
 
 **Cut from this pass:**
+
 - **Spread pairing** (`rendition:page-spread-left|right` → two-page display) —
   needs either two iframes shown side-by-side or one iframe spanning two
   spine items, real added complexity for a "beta" fixed-layout feature;
@@ -202,9 +204,9 @@ discussion needed): OPDS 1.2 (Atom) read-only, HTTP Basic + bearer auth, no
 OPDS 2.0.
 
 - [x] `OpdsSource(baseUrl, { auth?, fetch?, domParser? })` — a **catalog +
-      acquisition** surface distinct from `ReaderSource` (OPDS is a *library*
+      acquisition** surface distinct from `ReaderSource` (OPDS is a _library_
       protocol, not a per-book one): `listCatalog(url?) → OpdsFeed` (`{title?,
-      entries, next?}`), `acquire(entry) → LocalFileSource` — downloads the
+entries, next?}`), `acquire(entry) → LocalFileSource` — downloads the
       entry's acquisition link and wraps the bytes in a fresh
       `LocalFileSource` (as `File`), reusing its existing EPUB/PDF/CBZ/image
       sniffing rather than duplicating it.
@@ -224,7 +226,7 @@ OPDS 2.0.
       title/summary, `Open` acquires and hands the result to the same
       `dropped`-source path the file drop-zone uses, `next` pagination.
       Plain markup rather than a `reader-react` component — like F2's
-      highlights panel, this is book-*selection* UI (outside `<Reader>`), not
+      highlights panel, this is book-_selection_ UI (outside `<Reader>`), not
       reader chrome.
 - [x] Vitest: `opds-parse.test.ts` (10 tests: feed/entry parsing, the
       entry-link-leak guard, acquisition-link preference, filename guessing)
@@ -233,10 +235,11 @@ OPDS 2.0.
       failure errors, both auth headers) against a fake `fetch` — same policy
       as `KavitaSource`'s tests, no live server. Browser-verified end-to-end
       against a same-origin fixture catalog (`apps/demo/public/opds/
-      catalog.xml`, listing the `demo-book`/`demo-fixed`/`demo-pdf` fixtures)
+catalog.xml`, listing the `demo-book`/`demo-fixed`/`demo-pdf` fixtures)
       — browse → open → the fixed-layout demo book renders correctly.
 
 **Cut from this pass:**
+
 - **A real external catalog (e.g. Project Gutenberg's) as the demo's default**
   — the plan's original "done when" language. Skipped because a browser
   automation environment can't rely on a public OPDS host's CORS policy, and
@@ -279,9 +282,9 @@ Kept, rather than cut — the user asked to go through the plan in order
       `turn()`/`goto()` so it isn't mistaken for (and doesn't trigger) the
       "stop TTS on manual navigation" guard those two add.
 - [x] Controls: `TextEngine.ttsPlay/ttsPause/ttsResume/ttsStop/ttsSetRate/
-      ttsSetVoice/ttsListVoices/ttsState`; `reader-react`'s `useTts()` hook
+ttsSetVoice/ttsListVoices/ttsState`; `reader-react`'s `useTts()` hook
       (headless: `{state, play, pause, resume, stop, setRate, setVoice,
-      listVoices}`); the demo renders a play-bar UI (▶/⏸/⏹, rate select,
+listVoices}`); the demo renders a play-bar UI (▶/⏸/⏹, rate select,
       voice select when any are available, current-sentence text) toggled
       from a 🔊 button.
 - [x] Out of scope, as planned: audio export, cloud TTS voices, cross-device
@@ -334,7 +337,7 @@ checks the state machine only), see the current sentence highlighted. — met.
       an actual text node + local offset before the existing walk. 2 new
       `highlight.test.ts` cases lock this in (9 tests total, was 7).
 - [x] **Discovered the e2e suite had never actually been run** (`pnpm
-      --filter @pore/demo e2e` — every prior milestone verified manually via
+--filter @pore/demo e2e` — every prior milestone verified manually via
       the Browser pane, never `playwright test`). Running it for the first
       time surfaced that most of the pre-existing suite used
       `getByRole('button', { name: '›' })`/`'‹'`/`'⚙'` — glyph text that
@@ -349,40 +352,34 @@ checks the state machine only), see the current sentence highlighted. — met.
       passes. The `AxeBuilder.analyze()` "browser closed" crash turned out to
       be axe-core-playwright trying to inject into the reader's
       `sandbox`-no-`allow-scripts` iframe — fixed by `.exclude('iframe.
-      pore-text__frame')` on the two full-page axe scans (the iframe's markup
+pore-text__frame')` on the two full-page axe scans (the iframe's markup
       is the publisher's, not ours, so it's not in scope anyway).
 - [x] **Follow-up pass: fixed the 6 pre-existing e2e failures this run
       uncovered** (all predate F1-F5; the suite had just never been run to
-      completion):
-      - *TOC navigation was broken* — `TextEngine.goToHref()` (used by
-        `<TableOfContents>`) re-resolved its argument against the *current*
-        chapter's directory, but `book.toc` hands it an already-archive-
-        absolute path → double-resolved → no match → silent no-op. Split the
-        internal helper into `gotoHref` (chapter-relative, for in-book `<a>`
-        clicks) and `gotoResolvedHref` (archive-absolute, the public API's
-        contract); new regression test in `create-text-engine.test.ts`.
-      - *Real ARIA violation* — `SettingsPanel`'s close button rendered as a
-        DOM child of `role="tablist"` (only `tab` children allowed). Moved it
-        into a sibling `.pore-settings__tabsrow` wrapper.
-      - *Focus not returning on Escape* — Radix `Dialog` only restores focus
-        to a `Dialog.Trigger`, but the demo drives it via a controlled `open`
-        prop with an external toggle. Added an `onCloseAutoFocus` that
-        restores focus to whatever was focused when the dialog opened.
-      - *`SettingsPanel` "close by re-clicking ⚙" in the flow-mode test* was
-        a test bug — the trigger is behind the modal overlay; switched to
-        `Escape`.
-      - *Offline "download → reload" was broken* — the demo SW (a) never
-        precached the content-hashed build assets (only fetched pre-SW-
-        control on first load), (b) `Vary: Origin` on those assets hid
-        otherwise-valid cache hits, (c) `CachedSource` never persisted the
-        book manifest, so offline `getManifest()` threw. Fixed all three: SW
-        parses `index.html` for its `/assets/*` and precaches them + matches
-        with `ignoreVary`, and `CachedSource.download()`/`getManifest()` now
-        store and fall back to the manifest. New `cached-source.test.ts`
-        cases.
-      - *Scrubber seek test* clicked at 80% of the track and expected the
-        last chapter — off by a hair against demo-manga's chapter boundaries;
-        moved the click to 97%.
+      completion): - _TOC navigation was broken_ — `TextEngine.goToHref()` (used by
+      `<TableOfContents>`) re-resolved its argument against the _current_
+      chapter's directory, but `book.toc` hands it an already-archive-
+      absolute path → double-resolved → no match → silent no-op. Split the
+      internal helper into `gotoHref` (chapter-relative, for in-book `<a>`
+      clicks) and `gotoResolvedHref` (archive-absolute, the public API's
+      contract); new regression test in `create-text-engine.test.ts`. - _Real ARIA violation_ — `SettingsPanel`'s close button rendered as a
+      DOM child of `role="tablist"` (only `tab` children allowed). Moved it
+      into a sibling `.pore-settings__tabsrow` wrapper. - _Focus not returning on Escape_ — Radix `Dialog` only restores focus
+      to a `Dialog.Trigger`, but the demo drives it via a controlled `open`
+      prop with an external toggle. Added an `onCloseAutoFocus` that
+      restores focus to whatever was focused when the dialog opened. - _`SettingsPanel` "close by re-clicking ⚙" in the flow-mode test_ was
+      a test bug — the trigger is behind the modal overlay; switched to
+      `Escape`. - _Offline "download → reload" was broken_ — the demo SW (a) never
+      precached the content-hashed build assets (only fetched pre-SW-
+      control on first load), (b) `Vary: Origin` on those assets hid
+      otherwise-valid cache hits, (c) `CachedSource` never persisted the
+      book manifest, so offline `getManifest()` threw. Fixed all three: SW
+      parses `index.html` for its `/assets/*` and precaches them + matches
+      with `ignoreVary`, and `CachedSource.download()`/`getManifest()` now
+      store and fall back to the manifest. New `cached-source.test.ts`
+      cases. - _Scrubber seek test_ clicked at 80% of the track and expected the
+      last chapter — off by a hair against demo-manga's chapter boundaries;
+      moved the click to 97%.
 - [ ] ~~CFI round-trip fuzzed against a handful of real-world EPUBs~~ — cut:
       this repo's fixtures are deliberately CC0/synthetic-only (see every
       `demo-*` fixture's `SOURCE.md`/`LICENSE`); bundling real-world EPUBs for
@@ -390,13 +387,13 @@ checks the state machine only), see the current sentence highlighted. — met.
       covers the documented edge case (nested inline markup) against
       synthetic fixtures.
 - [x] Perf: highlight rendering already repaints only the highlights on the
-      *current spine* (`applyHighlights` filters `highlights` by
+      _current spine_ (`applyHighlights` filters `highlights` by
       `h.range.spine === spineIndex` before touching the DOM), not the whole
       book — satisfied by the existing design, no separate perf test needed.
       OPDS catalog virtualization: cut — the bundled fixture catalog has 3
       entries and there's no realistic path to hundreds in this portfolio's
       scope; would be premature optimization with nothing to optimize for.
-- [x] CHANGELOG `v0.7.0-annotate`; README; `CLAUDE.md` next-milestone pointer.
+- [x] CHANGELOG `v0.7.0-annotate`; README.
 - [ ] Tag `v0.7.0-annotate` — pending.
 
 ---

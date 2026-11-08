@@ -28,7 +28,11 @@ describe('gsapAdapter', () => {
 
   it('page() with dir 0 does not fade (a jump, not a turn)', () => {
     const { g, calls } = fakeGsap();
-    gsapAdapter(g).page(document.createElement('div'), 0, -300, { axis: 'x', dir: 0, reduced: false });
+    gsapAdapter(g).page(document.createElement('div'), 0, -300, {
+      axis: 'x',
+      dir: 0,
+      reduced: false,
+    });
     expect(calls.some((c) => c.fn === 'fromTo')).toBe(false);
   });
 

@@ -48,7 +48,8 @@ function Glyph({ kind }: { kind: ModeGlyph }) {
         strokeOpacity="0.3"
       />
       {kind === 'text' && [7, 12, 17, 22].map((y, i) => line(7, y, i === 3 ? 18 : 30))}
-      {kind === 'rtl' && [7, 12, 17, 22].map((y, i) => line(i === 3 ? 19 : 7, y, i === 3 ? 18 : 30))}
+      {kind === 'rtl' &&
+        [7, 12, 17, 22].map((y, i) => line(i === 3 ? 19 : 7, y, i === 3 ? 18 : 30))}
       {kind === 'spread' && (
         <>
           <rect x="6" y="6" width="14" height="20" rx="1.5" fill="currentColor" opacity="0.22" />
@@ -116,8 +117,8 @@ export function Landing({
         <header className="landing__head">
           <h1 className="landing__title">Pore.js</h1>
           <p className="landing__tagline">
-            A source-agnostic web reader for manga, comics and books — built from
-            scratch, with its own pagination engine and no backend.
+            A source-agnostic web reader for manga, comics and books — built from scratch, with its
+            own pagination engine and no backend.
           </p>
         </header>
 
@@ -228,11 +229,7 @@ export function Landing({
           <span aria-hidden>·</span>
           <span>
             Project B of two — the reader engine; Project A is the{' '}
-            <a
-              href="https://github.com/samsmon/yado"
-              target="_blank"
-              rel="noreferrer"
-            >
+            <a href="https://github.com/samsmon/yado" target="_blank" rel="noreferrer">
               whitearchive
             </a>{' '}
             library platform.

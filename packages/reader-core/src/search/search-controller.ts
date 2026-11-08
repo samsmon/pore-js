@@ -31,9 +31,7 @@ export class SearchController {
 
   constructor(opts: SearchControllerOptions = {}) {
     const factory =
-      opts.workerFactory === false
-        ? null
-        : (opts.workerFactory ?? defaultWorkerFactory());
+      opts.workerFactory === false ? null : (opts.workerFactory ?? defaultWorkerFactory());
     if (factory) {
       try {
         this.#worker = factory();

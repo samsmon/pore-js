@@ -1,11 +1,5 @@
 import type { Position } from '../position/types.js';
-import type {
-  GetFileOpts,
-  GetPageOpts,
-  ImageManifest,
-  Manifest,
-  ReaderSource,
-} from './types.js';
+import type { GetFileOpts, GetPageOpts, ImageManifest, Manifest, ReaderSource } from './types.js';
 
 /**
  * Kavita's `MangaFormat` enum (server-side numeric values).
@@ -94,7 +88,8 @@ export class KavitaSource implements ReaderSource {
     this.#apiKey = opts.apiKey;
     this.#pluginName = opts.pluginName ?? 'pore-js';
     const f = opts.fetch ?? globalThis.fetch;
-    if (typeof f !== 'function') throw new Error('KavitaSource: no fetch available; pass opts.fetch');
+    if (typeof f !== 'function')
+      throw new Error('KavitaSource: no fetch available; pass opts.fetch');
     this.#fetch = f.bind(globalThis);
   }
 
@@ -125,11 +120,9 @@ export class KavitaSource implements ReaderSource {
   }
 
   async getPage(bookId: string, index: number, opts?: GetPageOpts): Promise<Blob> {
-    // Kavita's image endpoint authenticates by apiKey query param *and* accepts
-    // the bearer token; the key in the query is the documented contract here.
     const url = `${this.#base}/api/Reader/image?chapterId=${encodeURIComponent(
       bookId,
-    )}&page=${index}&apiKey=${encodeURIComponent(this.#apiKey)}`;
+    )}&page=${index}`;
     const res = await this.#authed(url, opts?.signal ? { signal: opts.signal } : {});
     if (!res.ok) throw new Error(`KavitaSource: page ${index} of ${bookId} → HTTP ${res.status}`);
     return res.blob();

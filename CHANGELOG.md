@@ -18,7 +18,7 @@
 - **Mobile layout overhaul** — compact top bar, floating bottom bar, bottom sheet drawer for TOC & Settings, touch zones, and safe area insets.
 - **Zero-flicker & zero-delay manga page turns** — synchronous prefetch lookup via `loader.getUrl()`, atomic spread replacement.
 - **Auto-fit image transitions on sidebar toggle**.
-- **Security hardening** — SEC-01 DOMPurify footnote HTML sanitization against Stored XSS.
+- **Security hardening** — SEC-01 strict allowlist footnote HTML sanitization against Stored XSS.
 - **Accessibility fixes**:
   - A11Y-01: RTL scrubber ticks (`insetInlineStart`).
   - A11Y-02: Comic page announcements.
@@ -85,7 +85,7 @@
   (Playwright's WebKit, older Safari) — `renderToBlob` now falls back to an
   `HTMLCanvasElement`, and to PNG where the canvas can't encode WebP (Safari).
 - **Fixed: text selection / footnote taps / highlighting were dead in
-  Safari/WebKit** — a sandboxed reading frame without `allow-scripts` gets *no*
+  Safari/WebKit** — a sandboxed reading frame without `allow-scripts` gets _no_
   input events in WebKit. The frame's sandbox now has `allow-scripts`; scripts
   are still fully blocked by a new in-frame CSP (`script-src 'none'`) plus
   `rewrite.ts` stripping `<script>` / `on*` / `javascript:` / nested frames.
@@ -113,7 +113,7 @@
 
 M7 — library & portability (`docs/m7-plan.md`). Bookmarks, a home shelf of what
 you've read, a place to review every annotation, portable export / import, and
-`?cfi=` deep links. Additive: new *optional* source methods, one engine method,
+`?cfi=` deep links. Additive: new _optional_ source methods, one engine method,
 new headless components — nothing removed.
 
 ### Engine + packages (L0 / L1)
@@ -177,11 +177,11 @@ typography, chrome that recedes. No engine behaviour changed.
 
 - **The menu bar is one collapsible rail** on the left or right edge; it
   collapses to an icon-only strip. **Settings live in the same rail** — the
-  *Settings* button expands its sub-sections inline as a height-animated
+  _Settings_ button expands its sub-sections inline as a height-animated
   accordion, one open at a time. No modal dialog, no slide-over. New headless
   `Accordion` primitive (`SettingsAccordion`); `SettingsPanelBody` /
   `TextSettingsPanel` / `ImageSettingsPanel` take `layout?: 'tabs' |
-  'accordion'`.
+'accordion'`.
 - Controls: Prev / Next, Theme + Pin as one row above Settings, Fullscreen
   (real Fullscreen API), Download-for-offline, a page-turn-animations toggle.
   lucide SVG icons. `useAutoHide` wakes on real pointer/key/wheel/touch again.
@@ -244,7 +244,7 @@ needs a wider reshape than M5's scope.
   the handle; the demo dropped its hand-rolled markup for it. The selection
   toolbar gained a "highlight + note" action.
 - **Menu bar placement & behaviour (M5 G1)** — the demo's menu bar can now sit
-  on the top, left or right edge for *every* engine (not just EPUB), set in
+  on the top, left or right edge for _every_ engine (not just EPUB), set in
   Settings → Menu bar. A "Behaviour" choice picks "Always visible" (docks a side
   bar, insetting the reader; hides only in fullscreen) or "Auto-hide" (slides
   away when idle, wakes on pointer/keyboard — including pointer moves over the
@@ -315,7 +315,7 @@ text-to-speech — plus post-`v0.6.0-ui` UI polish. See `docs/m4-plan.md`.
   actually carry — a stale mismatch that had apparently never been caught
   because the suite had never been run end-to-end before this milestone.
 - **Text-to-speech (EPUB)** — `TextEngine.ttsPlay/ttsPause/ttsResume/ttsStop/
-  ttsSetRate/ttsSetVoice/ttsListVoices/ttsState`, backed by a synth-agnostic
+ttsSetRate/ttsSetVoice/ttsListVoices/ttsState`, backed by a synth-agnostic
   `createTtsController` + `Intl.Segmenter`-based sentence splitting
   (`text/tts.ts`). Speaks sentence by sentence via the browser's
   `SpeechSynthesis`, highlights the currently-spoken sentence (reusing F2's
@@ -336,7 +336,7 @@ text-to-speech — plus post-`v0.6.0-ui` UI polish. See `docs/m4-plan.md`.
 - **Fixed-layout EPUB** — a `rendition:layout="pre-paginated"` book (previously
   rejected with an error) now renders: one scaled, centred page per spine
   item instead of reflowable text, driven by the page's own `<meta
-  name="viewport">` size. Kept as a live iframe (not a canvas snapshot) so
+name="viewport">` size. Kept as a live iframe (not a canvas snapshot) so
   selection/highlighting keep working. New `demo-fixed` synthetic fixture
   (a 4-page kids'-book-style EPUB) in the demo's book picker. Page-spread
   pairing is not included — see `docs/m4-plan.md` F3.
@@ -379,7 +379,7 @@ text-to-speech — plus post-`v0.6.0-ui` UI polish. See `docs/m4-plan.md`.
   shape as the EPUB engine (page-level jump, not rect-level). The demo's search
   panel now works for PDFs too.
 - **Loading skeleton + error tile** — the image engine's `loadInto` now emits
-  `reader:loadingstate` (`loading`/`loaded`/`error`) for the *visible* page, not
+  `reader:loadingstate` (`loading`/`loaded`/`error`) for the _visible_ page, not
   just prefetch; `reader-react` gains `useReaderError()` (last `reader:error` +
   `dismiss`/`retry`, where `retry` re-`goto`s the current page). The demo shows
   a shimmering skeleton tile after a 220 ms delay (no flash on fast loads) and a
@@ -499,15 +499,15 @@ PDF support and one unified position/chrome model across image, text and PDF.
   shape every engine emits in `reader:locationchange`; `ReaderEngine<S,E>`
   interface + `CommonEngineEvents`
 - **`reader:progress`** `{ locator, percent, chapterLabel, chapterIndex,
-  chapterCount, pagesLeftInChapter, minutesLeft }` from every engine;
+chapterCount, pagesLeftInChapter, minutesLeft }` from every engine;
   `PaceEstimator` (EMA of seconds-per-page) drives `minutesLeft`
 - **`chapters(): Chapter[]`** on every engine — `{ id, label, startPage,
-  startPercent }`; `chapterProgress()` maps page → chapter
+startPercent }`; `chapterProgress()` maps page → chapter
 - **`LocalFileSource`** opens a dropped `.epub` / `.pdf` (served whole through
   `getFile`), and sniffs OPF `rendition:layout=pre-paginated` → `fixedLayout`
 - **`reader-react`** — `useReaderProgress()`, `handle.chapters()`
 - Per-book settings persistence (`createSettingsPersistence`, `<Reader
-  persistSettings>`); `publisherStyles: false` strips author CSS; `dimImages`
+persistSettings>`); `publisherStyles: false` strips author CSS; `dimImages`
 
 ### Added — EPUB navigation UX
 
